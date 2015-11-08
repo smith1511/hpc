@@ -1,0 +1,7 @@
+{
+  "itemDisplayName": "Spin up a SLURM cluster on SLES 12 HPC SKU",
+  "description": "Template spins up a SLURM cluster.",
+  "githubUsername": "smith1511",
+  "summary": "SLURM cluster",
+  "dateUpdated": "2015-11-09"
+}
