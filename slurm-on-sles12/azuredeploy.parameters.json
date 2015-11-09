@@ -26,5 +26,8 @@
     "workerNodeCount": {
       "value": 2
     },
+    "dataDiskSize": {
+      "value": 128
+    },
   }
 }
