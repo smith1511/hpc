@@ -103,7 +103,6 @@ setup_shares()
 
     if is_master; then
 	    setup_data_disks $SHARE_DATA
-        chown -R $HPC_USER:$HPC_GROUP $SHARE_DATA
         echo "$SHARE_HOME    *(rw,async)" >> /etc/exports
         echo "$SHARE_DATA    *(rw,async)" >> /etc/exports
         service nfsserver status && service nfsserver reload || service nfsserver start
@@ -113,7 +112,6 @@ setup_shares()
         mount -a
         mount | grep "^master:$SHARE_HOME"
         mount | grep "^master:$SHARE_DATA"
-        chown $HPC_USER:$HPC_GROUP $SHARE_DATA
     fi
 }
 
@@ -225,8 +223,10 @@ setup_hpc_user()
 
         chown $HPC_USER:$HPC_GROUP $SHARE_HOME/$HPC_USER/.ssh/authorized_keys
         chown $HPC_USER:$HPC_GROUP $SHARE_HOME/$HPC_USER/.ssh/config
+        chown -R $HPC_USER:$HPC_GROUP $SHARE_DATA
     else
         useradd -c "HPC User" -g $HPC_GROUP -d $SHARE_HOME/$HPC_USER -s /bin/bash -u $HPC_UID $HPC_USER
+        chown $HPC_USER:$HPC_GROUP $SHARE_DATA
     fi
 
     echo "$HPC_USER ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
