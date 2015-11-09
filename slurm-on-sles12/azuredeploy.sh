@@ -42,8 +42,6 @@ is_master()
 
 add_sdk_repo()
 {
-    echo "Installing SLES 12 SDK Repository"
-
     repoFile="/etc/zypp/repos.d/SMT-http_smt-azure_susecloud_net:SLE-SDK12-Pool.repo"
     if [ -e "$repoFile" ]; then
         echo "SLES 12 SDK Repository already installed"
@@ -72,7 +70,6 @@ install_pkgs()
 
 setup_shares()
 {
-
     mkdir -p $SHARE_HOME
     mkdir -p $SHARE_DATA
 
@@ -92,8 +89,6 @@ setup_shares()
 
 install_munge()
 {
-    echo "Installing munge"
-
     groupadd $MUNGE_GROUP
 
     useradd -M -c "Munge service account" -g munge -s /usr/sbin/nologin munge
@@ -138,7 +133,6 @@ install_munge()
 
 install_slurm_config()
 {
-
     if is_master; then
 	
 	    wget "$TEMPLATE_BASE_URL/slurm.template.conf"
@@ -210,9 +204,23 @@ setup_hpc_user()
     echo "$HPC_USER ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
 }
 
+setup_env()
+{
+    # Set unlimited mem lock
+    echo "$HPC_USER hard memlock unlimited" >> /etc/security/limits.conf
+	echo "$HPC_USER soft memlock unlimited" >> /etc/security/limits.conf
+
+	# Intel MPI config for IB
+    echo "# IB Config for MPI" > /etc/profile.d/hpc.sh
+	echo "export I_MPI_FABRICS=shm:dapl" >> /etc/profile.d/hpc.sh
+	echo "export I_MPI_DAPL_PROVIDER=ofa-v2-ib0" >> /etc/profile.d/hpc.sh
+	echo "export I_MPI_DYNAMIC_CONNECTION=0" >> /etc/profile.d/hpc.sh
+}
+
 add_sdk_repo
 install_pkgs
 setup_shares
 setup_hpc_user
 install_munge
 install_slurm
+setup_env
