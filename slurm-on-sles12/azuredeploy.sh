@@ -70,7 +70,6 @@ install_pkgs()
 setup_data_disks()
 {
     mountPoint="$1"
-
 	createdPartitions=""
 
     for disk in sdc sdd sde sdf sdg sdh sdi sdj sdk sdl sdm sdn sdo sdp sdq sdr; do
