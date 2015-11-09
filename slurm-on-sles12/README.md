@@ -6,8 +6,20 @@
 
 1. Fill in the 3 mandatory parameters - public DNS name, a storage account to hold VM image, and admin user password.
 
-2. Fill in other info and click "OK".
+2. Select an existing resource group or enter the name of a new resource group to create.
+
+3. Select the resource group location.
+
+4. Accept the terms and agreements/
+
+5. Click Create.
 
 ## Using the cluster
 
-Simply SSH to the master node and do a srun! The DNS name is _**dnsName**_._**location**_.cloudapp.azure.com, for example, yidingslurm.westus.cloudapp.azure.com.
+Simply SSH to the master node and do a srun! The DNS name is _**dnsName**_._**location**_.cloudapp.azure.com, for example, slurm12-hpc.westus.cloudapp.azure.com.
+
+You can log into the cluster user the admin user and password specified.  Once on the head node you can switch to the HPC user.  For security reasons this user cannot login to the head node directly.
+
+The HPC user can SSH to all nodes using public key authentication.  The HPC users home directory is a NFS share on the master and shared by all nodes for this user.
+
+The master node has a 16 disk RAID-0 under /share/data.  This is available at the same location on all worker nodes.
