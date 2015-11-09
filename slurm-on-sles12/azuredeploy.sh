@@ -145,9 +145,10 @@ install_munge()
 
     if is_master; then
         dd if=/dev/urandom bs=1 count=1024 > /etc/munge/munge.key
-        cp /etc/munge/munge.key $SHARE_DATA
+		mkdir -p $SHARE_DATA/slurm
+        cp /etc/munge/munge.key $SHARE_DATA/slurm
     else
-        cp $SHARE_DATA/munge.key /etc/munge/munge.key
+        cp $SHARE_DATA/slurm/munge.key /etc/munge/munge.key
     fi
 
     chown munge:munge /etc/munge/munge.key
