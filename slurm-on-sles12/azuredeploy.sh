@@ -103,6 +103,7 @@ setup_shares()
 
     if is_master; then
 	    setup_data_disks $SHARE_DATA
+        chown -R $HPC_USER:$HPC_GROUP $SHARE_DATA
         echo "$SHARE_HOME    *(rw,async)" >> /etc/exports
         echo "$SHARE_DATA    *(rw,async)" >> /etc/exports
         service nfsserver status && service nfsserver reload || service nfsserver start
@@ -112,6 +113,7 @@ setup_shares()
         mount -a
         mount | grep "^master:$SHARE_HOME"
         mount | grep "^master:$SHARE_DATA"
+        chown $HPC_USER:$HPC_GROUP $SHARE_DATA
     fi
 }
 
