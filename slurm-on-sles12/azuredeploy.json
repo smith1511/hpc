@@ -88,7 +88,7 @@
       "metadata": {
         "description": "This template creates N worker node. Use workerNodeCount to specify that N."
       }
-    }
+    },
     "dataDiskSize": {
       "type": "int",
       "defaultValue": 128,
