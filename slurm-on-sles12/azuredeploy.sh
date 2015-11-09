@@ -67,6 +67,35 @@ install_pkgs()
     zypper -n install $pkgs
 }
 
+setup_data_disks()
+{
+    mountPoint="$1"
+
+	createdPartitions=""
+
+    for disk in sdc sdd sde sdf sdg sdh sdi sdj sdk sdl sdm sdn sdo sdp sdq sdr; do
+        fdisk -l /dev/$disk || break
+        fdisk /dev/$disk << EOF
+n
+p
+1
+
+
+t
+fd
+w
+EOF
+        createdPartitions="$createdPartitions /dev/${disk}1"
+	done
+
+    if [ -n "$createdPartitions" ]; then
+        devices=`echo $createdPartitions | wc -w`
+        mdadm --create /dev/md10 --level 0 --raid-devices $devices $createdPartitions
+	    mkfs -t ext4 /dev/md10
+	    echo "/dev/md10 $mountPoint ext4 defaults,nofail 0 2" >> /etc/fstab
+	    mount /dev/md10
+    fi
+}
 
 setup_shares()
 {
@@ -74,6 +103,7 @@ setup_shares()
     mkdir -p $SHARE_DATA
 
     if is_master; then
+	    setup_data_disks $SHARE_DATA
         echo "$SHARE_HOME    *(rw,async)" >> /etc/exports
         echo "$SHARE_DATA    *(rw,async)" >> /etc/exports
         service nfsserver status && service nfsserver reload || service nfsserver start
@@ -85,7 +115,6 @@ setup_shares()
         mount | grep "^master:$SHARE_DATA"
     fi
 }
-
 
 install_munge()
 {
@@ -130,7 +159,6 @@ install_munge()
     cd $WORKING_DIR
 }
 
-
 install_slurm_config()
 {
     if is_master; then
@@ -148,7 +176,6 @@ install_slurm_config()
 
     ln -s $SHARE_DATA/slurm/slurm.conf /etc/slurm/
 }
-
 
 install_slurm()
 {
