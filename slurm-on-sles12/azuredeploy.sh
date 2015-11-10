@@ -62,7 +62,7 @@ add_sdk_repo()
         return 0
     fi
 	
-	wget $TEMPLATE_BASE_URL/files/sles12sdk.repo
+	wget $TEMPLATE_BASE_URL/sles12sdk.repo
 	
 	cp sles12sdk.repo "$repoFile"
 
@@ -196,7 +196,7 @@ install_slurm_config()
 
         mkdir -p $SLURM_CONF_DIR
 
-	    wget "$TEMPLATE_BASE_URL/files/slurm.template.conf"
+	    wget "$TEMPLATE_BASE_URL/slurm.template.conf"
 
 		cat slurm.template.conf |
 		        sed 's/__MASTER__/'"$MASTER_HOSTNAME"'/g' |
