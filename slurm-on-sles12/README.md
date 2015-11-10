@@ -24,7 +24,7 @@ Simply SSH to the master node using the DNS name _**dnsName**_._**location**_.cl
 # ssh azureuser@slurm12-hpc.westus.cloudapp.azure.com
 ```
 
-You can log into the cluster using the admin user and password specified.  Once on the head node you can switch to the HPC user.  For security reasons the HPC user cannot login to the head node directly.
+You can log into the head node using the admin user and password specified.  Once on the head node you can switch to the HPC user.  For security reasons the HPC user cannot login to the head node directly.
 
 ## Running workloads
 
