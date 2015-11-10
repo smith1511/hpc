@@ -67,6 +67,16 @@ hpc@master:~>
 
 Replace '6' above with the number of worker nodes your cluster was configured with.  The output of the command should print out the hostname of each node.
 
+### VM Sizes
+
+#### Head Node
+
+The master/head node only supports VM sizes that support up to 16 disks being attached, hence >= A4.
+
+#### Worker Nodes
+
+Worker nodes support any VM size.
+
 ### MPI
 
 To run MPI applications you'll need to use the A8/A9 instances which include InfiniBand and RDMA support.  We suggest using A8 for the head node and A9 instances for worker nodes.
