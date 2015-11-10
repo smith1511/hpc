@@ -204,7 +204,7 @@ install_slurm_config()
 				sed 's/__LAST_WORKER_INDEX__/'"$LAST_WORKER_INDEX"'/g' > $SLURM_CONF_DIR/slurm.conf
     fi
 
-    ln -s $SHARE_DATA/slurm/slurm.conf /etc/slurm/
+    ln -s $SLURM_CONF_DIR/slurm.conf /etc/slurm/slurm.conf
 }
 
 # Downloads, builds and installs SLURM on the node.
