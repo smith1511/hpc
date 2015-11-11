@@ -5,9 +5,6 @@
     "dnsName": {
       "value": "deishbai32"
     },
-    "newStorageAccountName": {
-      "value": "slurmcluster"
-    },
     "adminUserName": {
       "value": "azureuser"
     },
