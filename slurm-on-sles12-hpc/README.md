@@ -6,6 +6,10 @@ Deploys a SLURM cluster with head node and n worker nodes.
    <img alt="Deploy to Azure" src="http://azuredeploy.net/deploybutton.png"/>
 </a>
 
+<a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fsmith1511%2Fhpc%2Fmaster%2Fslurm-on-sles12-hpc%2Fazuredeploy-extend.json" target="_blank">
+   <img alt="Extend Cluster" src="http://azuredeploy.net/deploybutton.png"/>
+</a>
+
 1. Fill in the 3 mandatory parameters - public DNS name, a storage account to hold VM image, and admin user password.
 
 2. Select an existing resource group or enter the name of a new resource group to create.
