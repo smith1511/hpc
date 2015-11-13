@@ -74,7 +74,7 @@
     },
     "workerNodeStartIndex": {
       "type": "int",
-      "defaultValue": 0,
+      "defaultValue": 2,
       "metadata": {
         "description": "The first worker node to extend the cluster with.  If the cluster already has worker0 and worker1 then a value of '2' will add worker2 up to the workerNodeCount."
       }
@@ -86,11 +86,11 @@
         "description": "The number of worker nodes to add to the existing cluster"
       }
     },
-    "newStorageAccountName": {
+    "existingStorageAccountName": {
       "type": "string",
       "defaultValue": "",
       "metadata": {
-        "description": "The name of the existing storage account used by the cluster."
+        "description": "The name of the storage account used by the existing cluster."
       }
     }
   },
@@ -213,7 +213,7 @@
           "osDisk": {
             "name": "osdisk",
             "vhd": {
-              "uri": "[concat('http://',parameters('newStorageAccountName'),'.blob.core.windows.net/',variables('vmStorageAccountContainerName'),'/',variables('OSDiskName'),variables('workerVMName'),copyindex(parameters('workerNodeStartIndex')),'.vhd')]"
+              "uri": "[concat('http://',parameters('existingStorageAccountName'),'.blob.core.windows.net/',variables('vmStorageAccountContainerName'),'/',variables('OSDiskName'),variables('workerVMName'),copyindex(parameters('workerNodeStartIndex')),'.vhd')]"
             },
             "caching": "ReadWrite",
             "createOption": "FromImage"

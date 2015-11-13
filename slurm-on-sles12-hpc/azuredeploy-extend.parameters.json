@@ -20,7 +20,7 @@
     "workerNodeCount": {
       "value": 2
     },
-    "newStorageAccountName": {
+    "existingStorageAccountName": {
       "value": ""
     }
   }
