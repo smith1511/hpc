@@ -98,7 +98,6 @@
     "imagePublisher": "SUSE",
     "imageOffer": "SLES-HPC",
     "slesOSVersion": "12",
-    "newStorageAccountName": "[concat('st', uniqueString(resourceGroup().id))]",
     "vmStorageAccountContainerName": "vhd",
     "OSDiskName": "osdisk",
     "publicIPAddressType": "Dynamic",
@@ -189,7 +188,6 @@
       "name": "[concat(variables('workerVMName'), copyindex(  parameters('workerNodeStartIndex') ))]",
       "location": "[resourceGroup().location]",
       "dependsOn": [
-        "[concat('Microsoft.Storage/storageAccounts/', variables('newStorageAccountName'))]",
         "[concat('Microsoft.Network/networkInterfaces/', variables('nicName'), 'worker', copyindex(parameters('workerNodeStartIndex')))]"
       ],
       "copy": {
@@ -215,7 +213,7 @@
           "osDisk": {
             "name": "osdisk",
             "vhd": {
-              "uri": "[concat('http://',variables('newStorageAccountName'),'.blob.core.windows.net/',variables('vmStorageAccountContainerName'),'/',variables('OSDiskName'),variables('workerVMName'),copyindex(parameters('workerNodeStartIndex')),'.vhd')]"
+              "uri": "[concat('http://',parameters('newStorageAccountName'),'.blob.core.windows.net/',variables('vmStorageAccountContainerName'),'/',variables('OSDiskName'),variables('workerVMName'),copyindex(parameters('workerNodeStartIndex')),'.vhd')]"
             },
             "caching": "ReadWrite",
             "createOption": "FromImage"
