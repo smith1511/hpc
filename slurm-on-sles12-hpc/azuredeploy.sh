@@ -342,10 +342,10 @@ usage()
 
 if [ "x$1" = "xprovision" ]; then
     shift
-    provision_node
+    provision_node "$@"
 elif [ "x$1" = "xextend" ]; then
     shift
-    extend_cluster
+    extend_cluster "$@"
 else
     usage
 fi
