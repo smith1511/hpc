@@ -326,7 +326,8 @@ extend_cluster()
     # Update the SLURM conf file
 	install_slurm_config
 	
-	
+	# Restart all SLURM procs
+	slurm-restart.sh
 }
 
 # Prints the script usage and exits.
