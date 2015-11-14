@@ -134,7 +134,7 @@
     {
       "apiVersion": "[variables('armApiVersion')]",
       "type": "Microsoft.Compute/virtualMachines/extensions",
-      "name": "[concat(variables('masterVMName'), '/ExtendCluster')]",
+      "name": "[concat(variables('masterVMName'), '/ExtendClusterTo', add(parameters('workerNodeStartIndex'), parameters('workerNodeCount')))]",
       "location": "[resourceGroup().location]",
       "properties": {
         "publisher": "Microsoft.OSTCExtensions",
