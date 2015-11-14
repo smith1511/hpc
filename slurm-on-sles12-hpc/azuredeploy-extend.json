@@ -126,8 +126,8 @@
     "vnetID": "[resourceId(resourceGroup().name, 'Microsoft.Network/virtualNetworks',variables('networkSettings').virtualNetworkName)]",
     "subnetRef": "[concat(variables('vnetID'),'/subnets/',variables('networkSettings').subnet.dse.name)]",
     "templateBaseUrl": "https://raw.githubusercontent.com/smith1511/hpc/master/slurm-on-sles12-hpc/",
-    "installationCLI": "[concat('bash azuredeploy.sh ', variables('masterVMName'), ' ', variables('workerVMName'), ' ', parameters('workerNodeCount'), ' ', parameters('hpcUserName'), ' ', variables('templateBaseUrl'))]",
-	"extendClusterCLI": "[concat('bash azuredeploy.sh ', variables('masterVMName'), ' ', variables('workerVMName'), ' ', parameters('workerNodeCount'), ' ', parameters('hpcUserName'), ' ', variables('templateBaseUrl'))]",
+    "installationCLI": "[concat('bash azuredeploy.sh provision ', variables('masterVMName'), ' ', variables('workerVMName'), ' ', parameters('workerNodeCount'), ' ', parameters('hpcUserName'), ' ', variables('templateBaseUrl'))]",
+	"extendClusterCLI": "[concat('bash azuredeploy.sh extend ', variables('masterVMName'), ' ', variables('workerVMName'), ' ', parameters('workerNodeStartIndex'), ' ', parameters('workerNodeCount'), ' ', variables('templateBaseUrl'))]",
     "storageAccountType": "Standard_LRS"
   },
   "resources": [

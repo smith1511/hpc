@@ -322,7 +322,8 @@ extend_cluster()
     WORKER_COUNT=$4
     TEMPLATE_BASE_URL="$5"
     LAST_WORKER_INDEX=$(($WORKER_START_INDEX + $WORKER_COUNT - 1))
-	
+
+    # Update the SLURM conf file
 	install_slurm_config
 	
 	
