@@ -159,9 +159,6 @@
       "type": "Microsoft.Network/networkInterfaces",
       "name": "[concat(variables('nicName'), 'worker', copyindex(parameters('workerNodeStartIndex')))]",
       "location": "[resourceGroup().location]",
-      "dependsOn": [
-        "[concat('Microsoft.Network/virtualNetworks/', variables('networkSettings').virtualNetworkName)]"
-      ],
       "copy": {
         "name": "foo",
         "count": "[parameters('workerNodeCount')]"
