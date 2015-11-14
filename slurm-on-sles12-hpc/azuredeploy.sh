@@ -7,21 +7,11 @@ if [[ $(id -u) -ne 0 ]] ; then
     exit 1
 fi
 
-if [ $# != 5 ]; then
-    echo "Usage: $0 <MasterHostname> <WorkerHostnamePrefix> <WorkerNodeCount> <HPCUserName> <TemplateBaseUrl>"
-    exit 1
-fi
-
-# Set user args
-MASTER_HOSTNAME=$1
-WORKER_HOSTNAME_PREFIX=$2
-WORKER_COUNT=$3
-TEMPLATE_BASE_URL="$5"
-LAST_WORKER_INDEX=$(($WORKER_COUNT - 1))
 
 # Shares
 SHARE_HOME=/share/home
 SHARE_DATA=/share/data
+SHARE_BIN=/share/bin
 
 # Munged
 MUNGE_USER=munge
@@ -128,6 +118,7 @@ setup_shares()
 {
     mkdir -p $SHARE_HOME
     mkdir -p $SHARE_DATA
+	mkdir -p $SHARE_DATA/bin
 
     if is_master; then
 	    setup_data_disks $SHARE_DATA
@@ -204,7 +195,9 @@ install_slurm_config()
 				sed 's/__LAST_WORKER_INDEX__/'"$LAST_WORKER_INDEX"'/g' > $SLURM_CONF_DIR/slurm.conf
     fi
 
-    ln -s $SLURM_CONF_DIR/slurm.conf /etc/slurm/slurm.conf
+	if [ ! -e "$SLURM_CONF_DIR/slurm.conf /etc/slurm/slurm.conf" ]; then
+        ln -s $SLURM_CONF_DIR/slurm.conf /etc/slurm/slurm.conf
+	fi
 }
 
 # Downloads, builds and installs SLURM on the node.
@@ -232,6 +225,13 @@ install_slurm()
     install_slurm_config
 
     if is_master; then
+        # Install helper script to restart slurm procs across cluster
+		wget "$TEMPLATE_BASE_URL/slurm-restart.sh"
+		cat slurm-restart.sh |
+		        sed 's/__MASTER__/'"$MASTER_HOSTNAME"'/g' |
+				sed 's/__WORKER_HOSTNAME_PREFIX__/'"$WORKER_HOSTNAME_PREFIX"'/g' > $SHARE_BIN/slurm-restart.sh		
+        chmod +x $SHARE_BIN/slurm-restart.sh
+		
         /usr/sbin/slurmctld -vvvv
     else
         /usr/sbin/slurmd -vvvv
@@ -282,12 +282,67 @@ setup_env()
 	echo "export I_MPI_FABRICS=shm:dapl" >> /etc/profile.d/hpc.sh
 	echo "export I_MPI_DAPL_PROVIDER=ofa-v2-ib0" >> /etc/profile.d/hpc.sh
 	echo "export I_MPI_DYNAMIC_CONNECTION=0" >> /etc/profile.d/hpc.sh
+	echo "export PATH=$SHARE_BIN:\$PATH" >> /etc/profile.d/hpc.sh
 }
 
-add_sdk_repo
-install_pkgs
-setup_shares
-setup_hpc_user
-install_munge
-install_slurm
-setup_env
+
+provision_node()
+{
+    if [ $# != 5 ]; then
+        usage
+    fi
+	
+    # Set user args
+    MASTER_HOSTNAME=$1
+    WORKER_HOSTNAME_PREFIX=$2
+    WORKER_COUNT=$3
+    TEMPLATE_BASE_URL="$5"
+    LAST_WORKER_INDEX=$(($WORKER_COUNT - 1))
+	
+    add_sdk_repo
+    install_pkgs
+    setup_shares
+    setup_hpc_user
+    install_munge
+    install_slurm
+    setup_env
+}
+
+
+extend_cluster()
+{
+    if [ $# != 5 ]; then
+        usage
+    fi
+
+    # Set user args
+    MASTER_HOSTNAME=$1
+    WORKER_HOSTNAME_PREFIX=$2
+	WORKER_START_INDEX=$3
+    WORKER_COUNT=$4
+    TEMPLATE_BASE_URL="$5"
+    LAST_WORKER_INDEX=$(($WORKER_START_INDEX + $WORKER_COUNT - 1))
+	
+	install_slurm_config
+	
+	
+}
+
+# Prints the script usage and exits.
+#
+usage()
+{
+    echo "Usage: $0 provision <MasterHostname> <WorkerHostnamePrefix> <WorkerNodeCount> <HPCUserName> <TemplateBaseUrl>"
+	echo "       $0 extend <MasterHostname> <WorkerHostnamePrefix> <WorkerNodeStartIndex> <WorkerNodeCount> <TemplateBaseUrl>"
+    exit 1
+}
+
+if [ "x$1" = "xprovision" ]; then
+    shift
+    provision_node
+elif [ "x$1" = "xextend" ]; then
+    shift
+    extend_cluster
+else
+    usage
+fi
