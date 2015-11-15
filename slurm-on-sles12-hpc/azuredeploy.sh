@@ -190,7 +190,7 @@ install_slurm_config()
 	    wget "$TEMPLATE_BASE_URL/slurm.template.conf"
 
 		cat slurm.template.conf |
-		        sed 's/__MASTER__/'"$MASTER_HOSTNAME"'/g' |
+		        sed 's/__MASTER_HOSTNAME__/'"$MASTER_HOSTNAME"'/g' |
 				sed 's/__WORKER_HOSTNAME_PREFIX__/'"$WORKER_HOSTNAME_PREFIX"'/g' |
 				sed 's/__LAST_WORKER_INDEX__/'"$LAST_WORKER_INDEX"'/g' > $SLURM_CONF_DIR/slurm.conf
     fi
@@ -226,9 +226,9 @@ install_slurm()
 
     if is_master; then
         # Install helper script to restart slurm procs across cluster
-		wget "$TEMPLATE_BASE_URL/slurm-restart.sh"
-		cat slurm-restart.sh |
-		        sed 's/__MASTER__/'"$MASTER_HOSTNAME"'/g' |
+		wget "$TEMPLATE_BASE_URL/slurm-restart.template.sh"
+		cat slurm-restart.template.sh |
+		        sed 's/__MASTER_HOSTNAME__/'"$MASTER_HOSTNAME"'/g' |
 				sed 's/__WORKER_HOSTNAME_PREFIX__/'"$WORKER_HOSTNAME_PREFIX"'/g' > $SHARE_BIN/slurm-restart.sh
 
         chmod +x $SHARE_BIN/slurm-restart.sh
