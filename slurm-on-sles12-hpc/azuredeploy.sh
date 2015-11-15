@@ -118,10 +118,10 @@ setup_shares()
 {
     mkdir -p $SHARE_HOME
     mkdir -p $SHARE_DATA
-	mkdir -p $SHARE_BIN
 
     if is_master; then
 	    setup_data_disks $SHARE_DATA
+		mkdir -p $SHARE_BIN
         echo "$SHARE_HOME    *(rw,async)" >> /etc/exports
         echo "$SHARE_DATA    *(rw,async)" >> /etc/exports
         service nfsserver status && service nfsserver reload || service nfsserver start
