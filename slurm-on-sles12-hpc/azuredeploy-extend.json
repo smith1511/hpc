@@ -104,7 +104,6 @@
     "publicIPAddressName": "publicips",
     "masterVMName": "master",
     "workerVMName": "worker",
-	"masterExtensionName": "[concat('ExtendClusterTo', add(parameters('workerNodeStartIndex'), parameters('workerNodeCount')))]",
 	"armApiVersion": "2015-06-15",
     "nicName": "nic",
     "networkSettings": {
@@ -128,27 +127,9 @@
     "subnetRef": "[concat(variables('vnetID'),'/subnets/',variables('networkSettings').subnet.dse.name)]",
     "templateBaseUrl": "https://raw.githubusercontent.com/smith1511/hpc/master/slurm-on-sles12-hpc/",
     "installationCLI": "[concat('bash azuredeploy.sh provision ', variables('masterVMName'), ' ', variables('workerVMName'), ' ', parameters('workerNodeCount'), ' ', parameters('hpcUserName'), ' ', variables('templateBaseUrl'))]",
-	"extendClusterCLI": "[concat('bash azuredeploy.sh extend ', variables('masterVMName'), ' ', variables('workerVMName'), ' ', parameters('workerNodeStartIndex'), ' ', parameters('workerNodeCount'), ' ', variables('templateBaseUrl'))]",
     "storageAccountType": "Standard_LRS"
   },
   "resources": [
-    {
-      "apiVersion": "[variables('armApiVersion')]",
-      "type": "Microsoft.Compute/virtualMachines/extensions",
-      "name": "[concat(variables('masterVMName'), '/', variables('masterExtensionName'))]",
-      "location": "[resourceGroup().location]",
-      "properties": {
-        "publisher": "Microsoft.OSTCExtensions",
-        "type": "CustomScriptForLinux",
-        "typeHandlerVersion": "1.3",
-        "settings": {
-          "fileUris": [
-            "[concat(variables('templateBaseUrl'), 'azuredeploy.sh')]"
-          ],
-          "commandToExecute": "[variables('extendClusterCLI')]"
-        }
-      }
-    },
     {
       "apiVersion": "[variables('armApiVersion')]",
       "type": "Microsoft.Network/networkInterfaces",
@@ -225,8 +206,7 @@
       "name": "[concat(variables('workerVMName'), copyindex(parameters('workerNodeStartIndex')), '/Installation')]",
       "location": "[resourceGroup().location]",
       "dependsOn": [
-        "[concat('Microsoft.Compute/virtualMachines/', variables('workerVMName'), copyindex(parameters('workerNodeStartIndex')))]",
-		"[concat('Microsoft.Compute/virtualMachines/', variables('masterVMName'),'/extensions/', variables('masterExtensionName'))]",
+        "[concat('Microsoft.Compute/virtualMachines/', variables('workerVMName'), copyindex(parameters('workerNodeStartIndex')))]"
       ],
       "copy": {
         "name": "foo",
