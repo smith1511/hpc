@@ -104,6 +104,7 @@
     "publicIPAddressName": "publicips",
     "masterVMName": "master",
     "workerVMName": "worker",
+	"masterExtensionName": "[concat('ExtendClusterTo', add(parameters('workerNodeStartIndex'), parameters('workerNodeCount')))]",
 	"armApiVersion": "2015-06-15",
     "nicName": "nic",
     "networkSettings": {
@@ -134,7 +135,7 @@
     {
       "apiVersion": "[variables('armApiVersion')]",
       "type": "Microsoft.Compute/virtualMachines/extensions",
-      "name": "[concat(variables('masterVMName'), '/ExtendClusterTo', add(parameters('workerNodeStartIndex'), parameters('workerNodeCount')))]",
+      "name": "[concat(variables('masterVMName'), '/', variables('masterExtensionName'))]",
       "location": "[resourceGroup().location]",
       "properties": {
         "publisher": "Microsoft.OSTCExtensions",
@@ -224,7 +225,8 @@
       "name": "[concat(variables('workerVMName'), copyindex(parameters('workerNodeStartIndex')), '/Installation')]",
       "location": "[resourceGroup().location]",
       "dependsOn": [
-        "[concat('Microsoft.Compute/virtualMachines/', variables('workerVMName'), copyindex(parameters('workerNodeStartIndex')))]"
+        "[concat('Microsoft.Compute/virtualMachines/', variables('workerVMName'), copyindex(parameters('workerNodeStartIndex')))]",
+		"[concat('Microsoft.Compute/virtualMachines/', variables('masterVMName'),'/extensions/', variables('masterExtensionName'))]",
       ],
       "copy": {
         "name": "foo",
