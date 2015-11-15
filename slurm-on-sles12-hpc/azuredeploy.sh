@@ -11,7 +11,7 @@ fi
 # Shares
 SHARE_HOME=/share/home
 SHARE_DATA=/share/data
-SHARE_BIN=/share/bin
+SHARE_BIN=/share/data/bin
 
 # Munged
 MUNGE_USER=munge
@@ -118,7 +118,7 @@ setup_shares()
 {
     mkdir -p $SHARE_HOME
     mkdir -p $SHARE_DATA
-	mkdir -p $SHARE_DATA/bin
+	mkdir -p $SHARE_BIN
 
     if is_master; then
 	    setup_data_disks $SHARE_DATA
@@ -229,7 +229,8 @@ install_slurm()
 		wget "$TEMPLATE_BASE_URL/slurm-restart.sh"
 		cat slurm-restart.sh |
 		        sed 's/__MASTER__/'"$MASTER_HOSTNAME"'/g' |
-				sed 's/__WORKER_HOSTNAME_PREFIX__/'"$WORKER_HOSTNAME_PREFIX"'/g' > $SHARE_BIN/slurm-restart.sh		
+				sed 's/__WORKER_HOSTNAME_PREFIX__/'"$WORKER_HOSTNAME_PREFIX"'/g' > $SHARE_BIN/slurm-restart.sh
+
         chmod +x $SHARE_BIN/slurm-restart.sh
 		
         /usr/sbin/slurmctld -vvvv
@@ -260,7 +261,7 @@ setup_hpc_user()
 
         chown $HPC_USER:$HPC_GROUP $SHARE_HOME/$HPC_USER/.ssh/authorized_keys
         chown $HPC_USER:$HPC_GROUP $SHARE_HOME/$HPC_USER/.ssh/config
-        chown $HPC_USER:$HPC_GROUP $SHARE_DATA
+        chown -R $HPC_USER:$HPC_GROUP $SHARE_DATA
     else
         useradd -c "HPC User" -g $HPC_GROUP -d $SHARE_HOME/$HPC_USER -s /bin/bash -u $HPC_UID $HPC_USER
     fi
