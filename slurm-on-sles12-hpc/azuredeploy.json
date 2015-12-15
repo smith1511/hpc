@@ -2,10 +2,10 @@
   "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
   "contentVersion": "1.0.0.0",
   "parameters": {
-    "dnsName": {
+    "dnsPrefix": {
       "type": "string",
       "metadata": {
-        "description": "Unique public dns name where the master node will be exposed"
+        "description": "Unique public dns prefix where the master node will be exposed"
       }
     },
     "adminUserName": {
@@ -153,8 +153,8 @@
     },
     "vnetID": "[resourceId('Microsoft.Network/virtualNetworks',variables('networkSettings').virtualNetworkName)]",
     "subnetRef": "[concat(variables('vnetID'),'/subnets/',variables('networkSettings').subnet.dse.name)]",
-    "templateBaseUrl": "https://raw.githubusercontent.com/smith1511/hpc/master/slurm-on-sles12-hpc/",
-    "installationCLI": "[concat('bash azuredeploy.sh provision ', variables('masterVMName'), ' ', variables('workerVMName'), ' ', parameters('workerNodeCount'), ' ', parameters('hpcUserName'), ' ', variables('templateBaseUrl'))]",
+    "templateBaseUrl": "https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/slurm-on-sles12-hpc/",
+    "installationCLI": "[concat('bash azuredeploy.sh ', variables('masterVMName'), ' ', variables('workerVMName'), ' ', parameters('workerNodeCount'), ' ', parameters('hpcUserName'), ' ', variables('templateBaseUrl'))]",
     "storageAccountType": "Standard_LRS"
   },
   "resources": [
@@ -196,7 +196,7 @@
       "properties": {
         "publicIPAllocationMethod": "[variables('publicIPAddressType')]",
         "dnsSettings": {
-          "domainNameLabel": "[parameters('dnsName')]"
+          "domainNameLabel": "[parameters('dnsPrefix')]"
         }
       }
     },
@@ -454,6 +454,31 @@
     },
     {
       "apiVersion": "[variables('armApiVersion')]",
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "name": "[concat(variables('workerVMName'), copyindex(), '/Installation')]",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+	    "[concat('Microsoft.Compute/virtualMachines/', variables('masterVMName'),'/extensions/Installation')]",
+        "[concat('Microsoft.Compute/virtualMachines/', variables('workerVMName'), copyindex())]"
+      ],
+      "copy": {
+        "name": "foo",
+        "count": "[parameters('workerNodeCount')]"
+      },
+      "properties": {
+        "publisher": "Microsoft.OSTCExtensions",
+        "type": "CustomScriptForLinux",
+        "typeHandlerVersion": "1.3",
+        "settings": {
+          "fileUris": [
+            "[concat(variables('templateBaseUrl'), 'azuredeploy.sh')]"
+          ],
+          "commandToExecute": "[variables('installationCLI')]"
+        }
+      }
+    },
+    {
+      "apiVersion": "[variables('armApiVersion')]",
       "type": "Microsoft.Network/networkInterfaces",
       "name": "[concat(variables('nicName'), 'worker', copyindex())]",
       "location": "[resourceGroup().location]",
@@ -523,31 +548,6 @@
               "id": "[resourceId('Microsoft.Network/networkInterfaces',concat(variables('nicName'), 'worker', copyindex()))]"
             }
           ]
-        }
-      }
-    },
-    {
-      "apiVersion": "[variables('armApiVersion')]",
-      "type": "Microsoft.Compute/virtualMachines/extensions",
-      "name": "[concat(variables('workerVMName'), copyindex(), '/Installation')]",
-      "location": "[resourceGroup().location]",
-      "dependsOn": [
-	    "[concat('Microsoft.Compute/virtualMachines/', variables('masterVMName'),'/extensions/Installation')]",
-        "[concat('Microsoft.Compute/virtualMachines/', variables('workerVMName'), copyindex())]"
-      ],
-      "copy": {
-        "name": "foo",
-        "count": "[parameters('workerNodeCount')]"
-      },
-      "properties": {
-        "publisher": "Microsoft.OSTCExtensions",
-        "type": "CustomScriptForLinux",
-        "typeHandlerVersion": "1.3",
-        "settings": {
-          "fileUris": [
-            "[concat(variables('templateBaseUrl'), 'azuredeploy.sh')]"
-          ],
-          "commandToExecute": "[variables('installationCLI')]"
         }
       }
     }

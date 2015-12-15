@@ -7,11 +7,21 @@ if [[ $(id -u) -ne 0 ]] ; then
     exit 1
 fi
 
+if [ $# != 5 ]; then
+    echo "Usage: $0 <MasterHostname> <WorkerHostnamePrefix> <WorkerNodeCount> <HPCUserName> <TemplateBaseUrl>"
+    exit 1
+fi
+
+# Set user args
+MASTER_HOSTNAME=$1
+WORKER_HOSTNAME_PREFIX=$2
+WORKER_COUNT=$3
+TEMPLATE_BASE_URL="$5"
+LAST_WORKER_INDEX=$(($WORKER_COUNT - 1))
 
 # Shares
 SHARE_HOME=/share/home
 SHARE_DATA=/share/data
-SHARE_BIN=/share/data/bin
 
 # Munged
 MUNGE_USER=munge
@@ -27,7 +37,7 @@ SLURM_VERSION=15-08-1-1
 SLURM_CONF_DIR=$SHARE_DATA/conf
 
 # Hpc User
-HPC_USER=hpc
+HPC_USER=$4
 HPC_UID=7007
 HPC_GROUP=users
 
@@ -121,7 +131,6 @@ setup_shares()
 
     if is_master; then
 	    setup_data_disks $SHARE_DATA
-		mkdir -p $SHARE_BIN
         echo "$SHARE_HOME    *(rw,async)" >> /etc/exports
         echo "$SHARE_DATA    *(rw,async)" >> /etc/exports
         service nfsserver status && service nfsserver reload || service nfsserver start
@@ -190,14 +199,12 @@ install_slurm_config()
 	    wget "$TEMPLATE_BASE_URL/slurm.template.conf"
 
 		cat slurm.template.conf |
-		        sed 's/__MASTER_HOSTNAME__/'"$MASTER_HOSTNAME"'/g' |
+		        sed 's/__MASTER__/'"$MASTER_HOSTNAME"'/g' |
 				sed 's/__WORKER_HOSTNAME_PREFIX__/'"$WORKER_HOSTNAME_PREFIX"'/g' |
 				sed 's/__LAST_WORKER_INDEX__/'"$LAST_WORKER_INDEX"'/g' > $SLURM_CONF_DIR/slurm.conf
     fi
 
-	if [ ! -e "$SLURM_CONF_DIR/slurm.conf /etc/slurm/slurm.conf" ]; then
-        ln -s $SLURM_CONF_DIR/slurm.conf /etc/slurm/slurm.conf
-	fi
+    ln -s $SLURM_CONF_DIR/slurm.conf /etc/slurm/slurm.conf
 }
 
 # Downloads, builds and installs SLURM on the node.
@@ -225,14 +232,6 @@ install_slurm()
     install_slurm_config
 
     if is_master; then
-        # Install helper script to restart slurm procs across cluster
-		wget "$TEMPLATE_BASE_URL/slurm-restart.template.sh"
-		cat slurm-restart.template.sh |
-		        sed 's/__MASTER_HOSTNAME__/'"$MASTER_HOSTNAME"'/g' |
-				sed 's/__WORKER_HOSTNAME_PREFIX__/'"$WORKER_HOSTNAME_PREFIX"'/g' > $SHARE_BIN/slurm-restart.sh
-
-        chmod +x $SHARE_BIN/slurm-restart.sh
-		
         /usr/sbin/slurmctld -vvvv
     else
         /usr/sbin/slurmd -vvvv
@@ -261,7 +260,7 @@ setup_hpc_user()
 
         chown $HPC_USER:$HPC_GROUP $SHARE_HOME/$HPC_USER/.ssh/authorized_keys
         chown $HPC_USER:$HPC_GROUP $SHARE_HOME/$HPC_USER/.ssh/config
-        chown -R $HPC_USER:$HPC_GROUP $SHARE_DATA
+        chown $HPC_USER:$HPC_GROUP $SHARE_DATA
     else
         useradd -c "HPC User" -g $HPC_GROUP -d $SHARE_HOME/$HPC_USER -s /bin/bash -u $HPC_UID $HPC_USER
     fi
@@ -283,70 +282,12 @@ setup_env()
 	echo "export I_MPI_FABRICS=shm:dapl" >> /etc/profile.d/hpc.sh
 	echo "export I_MPI_DAPL_PROVIDER=ofa-v2-ib0" >> /etc/profile.d/hpc.sh
 	echo "export I_MPI_DYNAMIC_CONNECTION=0" >> /etc/profile.d/hpc.sh
-	echo "export PATH=$SHARE_BIN:\$PATH" >> /etc/profile.d/hpc.sh
 }
 
-
-provision_node()
-{
-    if [ $# != 5 ]; then
-        usage
-    fi
-	
-    # Set user args
-    MASTER_HOSTNAME=$1
-    WORKER_HOSTNAME_PREFIX=$2
-    WORKER_COUNT=$3
-	HPC_USER=$4
-    TEMPLATE_BASE_URL="$5"
-    LAST_WORKER_INDEX=$(($WORKER_COUNT - 1))
-	
-    add_sdk_repo
-    install_pkgs
-    setup_shares
-    setup_hpc_user
-    install_munge
-    install_slurm
-    setup_env
-}
-
-
-extend_cluster()
-{
-    if [ $# != 5 ]; then
-        usage
-    fi
-
-    # Set user args
-    MASTER_HOSTNAME=$1
-    WORKER_HOSTNAME_PREFIX=$2
-	WORKER_START_INDEX=$3
-    WORKER_COUNT=$4
-    TEMPLATE_BASE_URL="$5"
-    LAST_WORKER_INDEX=$(($WORKER_START_INDEX + $WORKER_COUNT - 1))
-
-    # Update the SLURM conf file
-	install_slurm_config
-	
-	# Restart all SLURM procs
-	slurm-restart.sh
-}
-
-# Prints the script usage and exits.
-#
-usage()
-{
-    echo "Usage: $0 provision <MasterHostname> <WorkerHostnamePrefix> <WorkerNodeCount> <HPCUserName> <TemplateBaseUrl>"
-	echo "       $0 extend <MasterHostname> <WorkerHostnamePrefix> <WorkerNodeStartIndex> <WorkerNodeCount> <TemplateBaseUrl>"
-    exit 1
-}
-
-if [ "x$1" = "xprovision" ]; then
-    shift
-    provision_node "$@"
-elif [ "x$1" = "xextend" ]; then
-    shift
-    extend_cluster "$@"
-else
-    usage
-fi
+add_sdk_repo
+install_pkgs
+setup_shares
+setup_hpc_user
+install_munge
+install_slurm
+setup_env
