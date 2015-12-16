@@ -4,7 +4,6 @@
   "parameters": {
     "imageUrl": {
       "type": "string",
-      "defaultValue": "http://cbshpcwestus.blob.core.windows.net/vhd/20150826185255-00853603622-centos71-rdma-os1.vhd",
       "metadata": {
         "description": "URL to CentOS 7.1 image"
       }
