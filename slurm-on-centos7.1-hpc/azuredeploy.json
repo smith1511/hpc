@@ -4,7 +4,10 @@
   "parameters": {
     "imageUrl": {
       "type": "string",
-      "defaultValue": "http://cbshpcwestus.blob.core.windows.net/vhd/20150826185255-00853603622-centos71-rdma-os1.vhd"
+      "defaultValue": "http://cbshpcwestus.blob.core.windows.net/vhd/20150826185255-00853603622-centos71-rdma-os1.vhd",
+      "metadata": {
+        "description": "URL to CentOS 7.1 image"
+      }
     },
     "dnsPrefix": {
       "type": "string",
@@ -136,7 +139,7 @@
     "masterVMName": "master",
     "workerVMName": "worker",
 	"armApiVersion": "2015-06-15",
-	"avSetName": "[concat(uniqueString(resourceGroup().id), 'avset')]",
+	"avSetName": "[concat(uniqueString(resourceGroup().id), 'as')]",
     "nicName": "nic",
 	"userImage": "[parameters('imageUrl')]",
     "networkSettings": {
@@ -263,12 +266,6 @@
           "adminPassword": "[parameters('adminPassword')]"
         },
         "storageProfile": {
-          "imageReference": {
-            "publisher": "[variables('imagePublisher')]",
-            "offer": "[variables('imageOffer')]",
-            "sku": "[variables('slesOSVersion')]",
-            "version": "latest"
-          },
           "osDisk": {
             "name": "osdisk",
             "osType": "Linux",
@@ -280,7 +277,7 @@
             },
             "caching": "ReadWrite",
             "createOption": "FromImage"
-          }
+          },
           "dataDisks": [
             {
               "name": "datadisk0",
@@ -552,12 +549,6 @@
           "adminPassword": "[parameters('adminPassword')]"
         },
         "storageProfile": {
-          "imageReference": {
-            "publisher": "[variables('imagePublisher')]",
-            "offer": "[variables('imageOffer')]",
-            "sku": "[variables('slesOSVersion')]",
-            "version": "latest"
-          },
           "osDisk": {
             "name": "osdisk",
             "osType": "Linux",
