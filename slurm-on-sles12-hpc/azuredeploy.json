@@ -132,6 +132,7 @@
     "masterVMName": "master",
     "workerVMName": "worker",
 	"armApiVersion": "2015-06-15",
+	"avSetName": "[concat(uniqueString(resourceGroup().id), 'as')]",
     "nicName": "nic",
     "networkSettings": {
       "virtualNetworkName": "virtualnetwork",
@@ -166,6 +167,13 @@
       "properties": {
         "accountType": "[variables('storageAccountType')]"
       }
+    },
+    {
+      "type": "Microsoft.Compute/availabilitySets",
+      "name": "[variables('avSetName')]",
+      "apiVersion": "[variables('armApiVersion')]",
+      "location": "[resourceGroup().location]",
+      "properties": {}
     },
     {
       "apiVersion": "[variables('armApiVersion')]",
@@ -234,9 +242,13 @@
       "location": "[resourceGroup().location]",
       "dependsOn": [
         "[concat('Microsoft.Storage/storageAccounts/', variables('newStorageAccountName'))]",
-        "[concat('Microsoft.Network/networkInterfaces/', variables('nicName'))]"
+        "[concat('Microsoft.Network/networkInterfaces/', variables('nicName'))]",
+		"[concat('Microsoft.Compute/availabilitySets/', variables('avSetName'))]"
       ],
       "properties": {
+        "availabilitySet": {
+          "id": "[resourceId('Microsoft.Compute/availabilitySets', variables('avSetName'))]"
+        },
         "hardwareProfile": {
           "vmSize": "[parameters('headNodeSize')]"
         },
@@ -511,13 +523,17 @@
       "location": "[resourceGroup().location]",
       "dependsOn": [
         "[concat('Microsoft.Storage/storageAccounts/', variables('newStorageAccountName'))]",
-        "[concat('Microsoft.Network/networkInterfaces/', variables('nicName'), 'worker', copyindex())]"
+        "[concat('Microsoft.Network/networkInterfaces/', variables('nicName'), 'worker', copyindex())]",
+		"[concat('Microsoft.Compute/availabilitySets/', variables('avSetName'))]"
       ],
       "copy": {
         "name": "foo",
         "count": "[parameters('workerNodeCount')]"
       },
       "properties": {
+        "availabilitySet": {
+          "id": "[resourceId('Microsoft.Compute/availabilitySets', variables('avSetName'))]"
+        },
         "hardwareProfile": {
           "vmSize": "[parameters('workerNodeSize')]"
         },
