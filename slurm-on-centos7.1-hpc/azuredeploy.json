@@ -2,12 +2,6 @@
   "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
   "contentVersion": "1.0.0.0",
   "parameters": {
-    "imageUrl": {
-      "type": "string",
-      "metadata": {
-        "description": "URL to CentOS 7.1 image"
-      }
-    },
     "dnsPrefix": {
       "type": "string",
       "metadata": {
@@ -127,9 +121,9 @@
     }
   },
   "variables": {
-    "imagePublisher": "SUSE",
-    "imageOffer": "SLES-HPC",
-    "slesOSVersion": "12",
+    "imagePublisher": "OpenLogic",
+    "imageOffer": "CentOS",
+    "imageSku": "7.1",
     "newStorageAccountName": "[concat(uniqueString(resourceGroup().id), 'sa')]",
     "vmStorageAccountContainerName": "vhd",
     "OSDiskName": "osdisk",
@@ -140,7 +134,6 @@
 	"armApiVersion": "2015-06-15",
 	"avSetName": "[concat(uniqueString(resourceGroup().id), 'as')]",
     "nicName": "nic",
-	"userImage": "[parameters('imageUrl')]",
     "networkSettings": {
       "virtualNetworkName": "virtualnetwork",
       "addressPrefix": "10.0.0.0/16",
@@ -265,12 +258,14 @@
           "adminPassword": "[parameters('adminPassword')]"
         },
         "storageProfile": {
+          "imageReference": {
+            "publisher": "[variables('imagePublisher')]",
+            "offer": "[variables('imageOffer')]",
+            "sku": "[variables('imageSku')]",
+            "version": "latest"
+          },
           "osDisk": {
             "name": "osdisk",
-            "osType": "Linux",
-            "image": {
-              "uri": "[variables('userImage')]"
-            },
             "vhd": {
               "uri": "[concat('http://',variables('newStorageAccountName'),'.blob.core.windows.net/',variables('vmStorageAccountContainerName'),'/',variables('OSDiskName'),variables('masterVMName'),'.vhd')]"
             },
@@ -548,14 +543,16 @@
           "adminPassword": "[parameters('adminPassword')]"
         },
         "storageProfile": {
+          "imageReference": {
+            "publisher": "[variables('imagePublisher')]",
+            "offer": "[variables('imageOffer')]",
+            "sku": "[variables('imageSku')]",
+            "version": "latest"
+          },
           "osDisk": {
             "name": "osdisk",
-            "osType": "Linux",
-            "image": {
-              "uri": "[variables('userImage')]"
-            },
             "vhd": {
-              "uri": "[concat('http://',variables('newStorageAccountName'),'.blob.core.windows.net/',variables('vmStorageAccountContainerName'),'/',variables('OSDiskName'),variables('workerVMName'),'.vhd')]"
+              "uri": "[concat('http://',variables('newStorageAccountName'),'.blob.core.windows.net/',variables('vmStorageAccountContainerName'),'/',variables('OSDiskName'),variables('workerVMName'),copyindex(),'.vhd')]"
             },
             "caching": "ReadWrite",
             "createOption": "FromImage"
