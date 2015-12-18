@@ -2,6 +2,20 @@
   "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
   "contentVersion": "1.0.0.0",
   "parameters": {
+    "ImageBlob": {
+      "type": "string",
+      "defaultValue": "20150826185255-00853603622-centos71-rdma-os1.vhd",
+      "metadata": {
+        "description": "OS image VHD blob name - must reside in a container named vhds"
+      }
+    },
+    "existingStorageAccountName": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Existing storage account name where OS image resides"
+      }
+    },
     "dnsPrefix": {
       "type": "string",
       "metadata": {
@@ -124,7 +138,9 @@
     "imagePublisher": "OpenLogic",
     "imageOffer": "CentOS",
     "imageSku": "7.1",
-    "newStorageAccountName": "[concat(uniqueString(resourceGroup().id), 'sa')]",
+    "userImage": "[concat('http://',parameters('existingStorageAccountName'),'.blob.core.windows.net/vhds/',parameters('ImageBlob'))]",
+    "vhdStorage": "[concat('http://',parameters('existingStorageAccountName'),'.blob.core.windows.net/vhds/')]",
+    "existingStorageAccountName": "[parameters('existingStorageAccountName')]",
     "vmStorageAccountContainerName": "vhd",
     "OSDiskName": "osdisk",
     "publicIPAddressType": "Dynamic",
@@ -154,14 +170,14 @@
     },
     "vnetID": "[resourceId('Microsoft.Network/virtualNetworks',variables('networkSettings').virtualNetworkName)]",
     "subnetRef": "[concat(variables('vnetID'),'/subnets/',variables('networkSettings').subnet.dse.name)]",
-    "templateBaseUrl": "https://raw.githubusercontent.com/smith1511/hpc/feature/centos70/slurm-on-centos7.1-hpc/",
+    "templateBaseUrl": "https://raw.githubusercontent.com/smith1511/hpc/feature/centos70/slurm-on-centos7.1-from-image-hpc/",
     "installationCLI": "[concat('bash azuredeploy.sh ', variables('masterVMName'), ' ', variables('workerVMName'), ' ', parameters('workerNodeCount'), ' ', parameters('hpcUserName'), ' ', variables('templateBaseUrl'))]",
     "storageAccountType": "Standard_LRS"
   },
   "resources": [
     {
       "type": "Microsoft.Storage/storageAccounts",
-      "name": "[variables('newStorageAccountName')]",
+      "name": "[variables('existingStorageAccountName')]",
       "apiVersion": "[variables('armApiVersion')]",
       "location": "[resourceGroup().location]",
       "properties": {
@@ -241,7 +257,7 @@
       "name": "[variables('masterVMName')]",
       "location": "[resourceGroup().location]",
       "dependsOn": [
-        "[concat('Microsoft.Storage/storageAccounts/', variables('newStorageAccountName'))]",
+        "[concat('Microsoft.Storage/storageAccounts/', variables('existingStorageAccountName'))]",
         "[concat('Microsoft.Network/networkInterfaces/', variables('nicName'))]",
 		"[concat('Microsoft.Compute/availabilitySets/', variables('avSetName'))]"
       ],
@@ -258,16 +274,14 @@
           "adminPassword": "[parameters('adminPassword')]"
         },
         "storageProfile": {
-          "imageReference": {
-            "publisher": "[variables('imagePublisher')]",
-            "offer": "[variables('imageOffer')]",
-            "sku": "[variables('imageSku')]",
-            "version": "latest"
-          },
           "osDisk": {
             "name": "osdisk",
+            "osType": "Linux",
+            "image": {
+              "uri": "[variables('userImage')]"
+            },
             "vhd": {
-              "uri": "[concat('http://',variables('newStorageAccountName'),'.blob.core.windows.net/',variables('vmStorageAccountContainerName'),'/',variables('OSDiskName'),variables('masterVMName'),'.vhd')]"
+              "uri": "[concat('http://',variables('existingStorageAccountName'),'.blob.core.windows.net/',variables('vmStorageAccountContainerName'),'/',variables('OSDiskName'),variables('masterVMName'),'.vhd')]"
             },
             "caching": "ReadWrite",
             "createOption": "FromImage"
@@ -278,7 +292,7 @@
               "diskSizeGB": "[parameters('dataDiskSize')]",
               "lun": 0,
               "vhd": {
-                "Uri":  "[concat('http://',variables('newStorageAccountName'),'.blob.core.windows.net/',variables('vmStorageAccountContainerName'),'/',variables('masterVMName'),'-datadisk0.vhd')]"
+                "Uri":  "[concat('http://',variables('existingStorageAccountName'),'.blob.core.windows.net/',variables('vmStorageAccountContainerName'),'/',variables('masterVMName'),'-datadisk0.vhd')]"
               },
               "caching": "None",
               "createOption": "Empty"
@@ -288,7 +302,7 @@
               "diskSizeGB": "[parameters('dataDiskSize')]",
               "lun": 1,
               "vhd": {
-                "Uri":  "[concat('http://',variables('newStorageAccountName'),'.blob.core.windows.net/',variables('vmStorageAccountContainerName'),'/',variables('masterVMName'),'-datadisk1.vhd')]"
+                "Uri":  "[concat('http://',variables('existingStorageAccountName'),'.blob.core.windows.net/',variables('vmStorageAccountContainerName'),'/',variables('masterVMName'),'-datadisk1.vhd')]"
               },
               "caching": "None",
               "createOption": "Empty"
@@ -298,7 +312,7 @@
               "diskSizeGB": "[parameters('dataDiskSize')]",
               "lun": 2,
               "vhd": {
-                "Uri":  "[concat('http://',variables('newStorageAccountName'),'.blob.core.windows.net/',variables('vmStorageAccountContainerName'),'/',variables('masterVMName'),'-datadisk2.vhd')]"
+                "Uri":  "[concat('http://',variables('existingStorageAccountName'),'.blob.core.windows.net/',variables('vmStorageAccountContainerName'),'/',variables('masterVMName'),'-datadisk2.vhd')]"
               },
               "caching": "None",
               "createOption": "Empty"
@@ -308,7 +322,7 @@
               "diskSizeGB": "[parameters('dataDiskSize')]",
               "lun": 3,
               "vhd": {
-                "Uri":  "[concat('http://',variables('newStorageAccountName'),'.blob.core.windows.net/',variables('vmStorageAccountContainerName'),'/',variables('masterVMName'),'-datadisk3.vhd')]"
+                "Uri":  "[concat('http://',variables('existingStorageAccountName'),'.blob.core.windows.net/',variables('vmStorageAccountContainerName'),'/',variables('masterVMName'),'-datadisk3.vhd')]"
               },
               "caching": "None",
               "createOption": "Empty"
@@ -318,7 +332,7 @@
               "diskSizeGB": "[parameters('dataDiskSize')]",
               "lun": 4,
               "vhd": {
-                "Uri":  "[concat('http://',variables('newStorageAccountName'),'.blob.core.windows.net/',variables('vmStorageAccountContainerName'),'/',variables('masterVMName'),'-datadisk4.vhd')]"
+                "Uri":  "[concat('http://',variables('existingStorageAccountName'),'.blob.core.windows.net/',variables('vmStorageAccountContainerName'),'/',variables('masterVMName'),'-datadisk4.vhd')]"
               },
               "caching": "None",
               "createOption": "Empty"
@@ -328,7 +342,7 @@
               "diskSizeGB": "[parameters('dataDiskSize')]",
               "lun": 5,
               "vhd": {
-                "Uri":  "[concat('http://',variables('newStorageAccountName'),'.blob.core.windows.net/',variables('vmStorageAccountContainerName'),'/',variables('masterVMName'),'-datadisk5.vhd')]"
+                "Uri":  "[concat('http://',variables('existingStorageAccountName'),'.blob.core.windows.net/',variables('vmStorageAccountContainerName'),'/',variables('masterVMName'),'-datadisk5.vhd')]"
               },
               "caching": "None",
               "createOption": "Empty"
@@ -338,7 +352,7 @@
               "diskSizeGB": "[parameters('dataDiskSize')]",
               "lun": 6,
               "vhd": {
-                "Uri":  "[concat('http://',variables('newStorageAccountName'),'.blob.core.windows.net/',variables('vmStorageAccountContainerName'),'/',variables('masterVMName'),'-datadisk6.vhd')]"
+                "Uri":  "[concat('http://',variables('existingStorageAccountName'),'.blob.core.windows.net/',variables('vmStorageAccountContainerName'),'/',variables('masterVMName'),'-datadisk6.vhd')]"
               },
               "caching": "None",
               "createOption": "Empty"
@@ -348,7 +362,7 @@
               "diskSizeGB": "[parameters('dataDiskSize')]",
               "lun": 7,
               "vhd": {
-                "Uri":  "[concat('http://',variables('newStorageAccountName'),'.blob.core.windows.net/',variables('vmStorageAccountContainerName'),'/',variables('masterVMName'),'-datadisk7.vhd')]"
+                "Uri":  "[concat('http://',variables('existingStorageAccountName'),'.blob.core.windows.net/',variables('vmStorageAccountContainerName'),'/',variables('masterVMName'),'-datadisk7.vhd')]"
               },
               "caching": "None",
               "createOption": "Empty"
@@ -358,7 +372,7 @@
               "diskSizeGB": "[parameters('dataDiskSize')]",
               "lun": 8,
               "vhd": {
-                "Uri":  "[concat('http://',variables('newStorageAccountName'),'.blob.core.windows.net/',variables('vmStorageAccountContainerName'),'/',variables('masterVMName'),'-datadisk8.vhd')]"
+                "Uri":  "[concat('http://',variables('existingStorageAccountName'),'.blob.core.windows.net/',variables('vmStorageAccountContainerName'),'/',variables('masterVMName'),'-datadisk8.vhd')]"
               },
               "caching": "None",
               "createOption": "Empty"
@@ -368,7 +382,7 @@
               "diskSizeGB": "[parameters('dataDiskSize')]",
               "lun": 9,
               "vhd": {
-                "Uri":  "[concat('http://',variables('newStorageAccountName'),'.blob.core.windows.net/',variables('vmStorageAccountContainerName'),'/',variables('masterVMName'),'-datadisk9.vhd')]"
+                "Uri":  "[concat('http://',variables('existingStorageAccountName'),'.blob.core.windows.net/',variables('vmStorageAccountContainerName'),'/',variables('masterVMName'),'-datadisk9.vhd')]"
               },
               "caching": "None",
               "createOption": "Empty"
@@ -378,7 +392,7 @@
               "diskSizeGB": "[parameters('dataDiskSize')]",
               "lun": 10,
               "vhd": {
-                "Uri":  "[concat('http://',variables('newStorageAccountName'),'.blob.core.windows.net/',variables('vmStorageAccountContainerName'),'/',variables('masterVMName'),'-datadisk10.vhd')]"
+                "Uri":  "[concat('http://',variables('existingStorageAccountName'),'.blob.core.windows.net/',variables('vmStorageAccountContainerName'),'/',variables('masterVMName'),'-datadisk10.vhd')]"
               },
               "caching": "None",
               "createOption": "Empty"
@@ -388,7 +402,7 @@
               "diskSizeGB": "[parameters('dataDiskSize')]",
               "lun": 11,
               "vhd": {
-                "Uri":  "[concat('http://',variables('newStorageAccountName'),'.blob.core.windows.net/',variables('vmStorageAccountContainerName'),'/',variables('masterVMName'),'-datadisk11.vhd')]"
+                "Uri":  "[concat('http://',variables('existingStorageAccountName'),'.blob.core.windows.net/',variables('vmStorageAccountContainerName'),'/',variables('masterVMName'),'-datadisk11.vhd')]"
               },
               "caching": "None",
               "createOption": "Empty"
@@ -398,7 +412,7 @@
               "diskSizeGB": "[parameters('dataDiskSize')]",
               "lun": 12,
               "vhd": {
-                "Uri":  "[concat('http://',variables('newStorageAccountName'),'.blob.core.windows.net/',variables('vmStorageAccountContainerName'),'/',variables('masterVMName'),'-datadisk12.vhd')]"
+                "Uri":  "[concat('http://',variables('existingStorageAccountName'),'.blob.core.windows.net/',variables('vmStorageAccountContainerName'),'/',variables('masterVMName'),'-datadisk12.vhd')]"
               },
               "caching": "None",
               "createOption": "Empty"
@@ -408,7 +422,7 @@
               "diskSizeGB": "[parameters('dataDiskSize')]",
               "lun": 13,
               "vhd": {
-                "Uri":  "[concat('http://',variables('newStorageAccountName'),'.blob.core.windows.net/',variables('vmStorageAccountContainerName'),'/',variables('masterVMName'),'-datadisk13.vhd')]"
+                "Uri":  "[concat('http://',variables('existingStorageAccountName'),'.blob.core.windows.net/',variables('vmStorageAccountContainerName'),'/',variables('masterVMName'),'-datadisk13.vhd')]"
               },
               "caching": "None",
               "createOption": "Empty"
@@ -418,7 +432,7 @@
               "diskSizeGB": "[parameters('dataDiskSize')]",
               "lun": 14,
               "vhd": {
-                "Uri":  "[concat('http://',variables('newStorageAccountName'),'.blob.core.windows.net/',variables('vmStorageAccountContainerName'),'/',variables('masterVMName'),'-datadisk14.vhd')]"
+                "Uri":  "[concat('http://',variables('existingStorageAccountName'),'.blob.core.windows.net/',variables('vmStorageAccountContainerName'),'/',variables('masterVMName'),'-datadisk14.vhd')]"
               },
               "caching": "None",
               "createOption": "Empty"
@@ -428,7 +442,7 @@
               "diskSizeGB": "[parameters('dataDiskSize')]",
               "lun": 15,
               "vhd": {
-                "Uri":  "[concat('http://',variables('newStorageAccountName'),'.blob.core.windows.net/',variables('vmStorageAccountContainerName'),'/',variables('masterVMName'),'-datadisk15.vhd')]"
+                "Uri":  "[concat('http://',variables('existingStorageAccountName'),'.blob.core.windows.net/',variables('vmStorageAccountContainerName'),'/',variables('masterVMName'),'-datadisk15.vhd')]"
               },
               "caching": "None",
               "createOption": "Empty"
@@ -522,7 +536,7 @@
       "name": "[concat(variables('workerVMName'), copyindex())]",
       "location": "[resourceGroup().location]",
       "dependsOn": [
-        "[concat('Microsoft.Storage/storageAccounts/', variables('newStorageAccountName'))]",
+        "[concat('Microsoft.Storage/storageAccounts/', variables('existingStorageAccountName'))]",
         "[concat('Microsoft.Network/networkInterfaces/', variables('nicName'), 'worker', copyindex())]",
 		"[concat('Microsoft.Compute/availabilitySets/', variables('avSetName'))]"
       ],
@@ -543,16 +557,14 @@
           "adminPassword": "[parameters('adminPassword')]"
         },
         "storageProfile": {
-          "imageReference": {
-            "publisher": "[variables('imagePublisher')]",
-            "offer": "[variables('imageOffer')]",
-            "sku": "[variables('imageSku')]",
-            "version": "latest"
-          },
           "osDisk": {
             "name": "osdisk",
+            "osType": "Linux",
+            "image": {
+              "uri": "[variables('userImage')]"
+            },
             "vhd": {
-              "uri": "[concat('http://',variables('newStorageAccountName'),'.blob.core.windows.net/',variables('vmStorageAccountContainerName'),'/',variables('OSDiskName'),variables('workerVMName'),copyindex(),'.vhd')]"
+              "uri": "[concat('http://',variables('existingStorageAccountName'),'.blob.core.windows.net/',variables('vmStorageAccountContainerName'),'/',variables('OSDiskName'),variables('workerVMName'),copyindex(),'.vhd')]"
             },
             "caching": "ReadWrite",
             "createOption": "FromImage"
