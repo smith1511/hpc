@@ -40,7 +40,8 @@ SLURM_CONF_DIR=$SHARE_DATA/conf
 # Hpc User
 HPC_USER=$4
 HPC_UID=7007
-HPC_GROUP=users
+HPC_GROUP=hpc
+HPC_GID=7007
 
 
 # Returns 0 if this node is the master node.
@@ -232,8 +233,10 @@ install_slurm()
 setup_hpc_user()
 {
     if is_master; then
-        groupadd $HPC_GROUP
+        mkdir -p $SHARE_HOME/$HPC_USER
+        groupadd -g $HPC_GID $HPC_GROUP
         useradd -c "HPC User" -g $HPC_GROUP -d $SHARE_HOME/$HPC_USER -s /bin/bash -m -u $HPC_UID $HPC_USER
+        chown -R $HPC_USER:$HPC_GROUP $SHARE_HOME/$HPC_USER
 
         # Configure public key auth for the HPC user
         sudo -u $HPC_USER ssh-keygen -t rsa -f $SHARE_HOME/$HPC_USER/.ssh/id_rsa -q -P ""
