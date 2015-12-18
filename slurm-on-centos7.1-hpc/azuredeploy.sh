@@ -232,6 +232,7 @@ install_slurm()
 setup_hpc_user()
 {
     if is_master; then
+        groupadd $HPC_GROUP
         useradd -c "HPC User" -g $HPC_GROUP -d $SHARE_HOME/$HPC_USER -s /bin/bash -m -u $HPC_UID $HPC_USER
 
         # Configure public key auth for the HPC user
