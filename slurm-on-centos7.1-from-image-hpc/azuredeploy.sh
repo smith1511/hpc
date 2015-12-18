@@ -239,6 +239,8 @@ setup_hpc_user()
         chown -R $HPC_USER:$HPC_GROUP $SHARE_HOME/$HPC_USER
 
         # Configure public key auth for the HPC user
+        # We have to fix sudo first...
+        sed -i 's/^Defaults[ ]*requiretty/#Defaults requiretty/g' /etc/sudoers
         sudo -u $HPC_USER ssh-keygen -t rsa -f $SHARE_HOME/$HPC_USER/.ssh/id_rsa -q -P ""
         cat $SHARE_HOME/$HPC_USER/.ssh/id_rsa.pub > $SHARE_HOME/$HPC_USER/.ssh/authorized_keys
 
