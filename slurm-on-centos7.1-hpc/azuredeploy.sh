@@ -248,7 +248,6 @@ setup_hpc_user()
         mkdir -p $SHARE_HOME/$HPC_USER/.ssh
 		chown -R $HPC_USER:$HPC_GROUP $SHARE_HOME/$HPC_USER/.ssh
 		
-		bash
         sudo -u $HPC_USER ssh-keygen -t rsa -f $SHARE_HOME/$HPC_USER/.ssh/id_rsa -q -P "" >> /tmp/out 2>&1
 		echo "Exited with $?" >> /tmp/out 
 		chown -R $HPC_USER:$HPC_GROUP $SHARE_HOME/$HPC_USER/.ssh/id_rsa
