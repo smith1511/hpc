@@ -245,7 +245,9 @@ setup_hpc_user()
 		chown -R $HPC_USER:$HPC_GROUP $SHARE_HOME/$HPC_USER/.ssh
 		chmod 700 $SHARE_HOME/$HPC_USER/.ssh
 		
-        ssh-keygen -t rsa -f $SHARE_HOME/$HPC_USER/.ssh/id_rsa -q -P ""
+		bash
+        sudo -u $HPC_USER ssh-keygen -t rsa -f $SHARE_HOME/$HPC_USER/.ssh/id_rsa -q -P "" >> /tmp/out 2>&1
+		echo "Exited with $?" >> /tmp/out 
 		chown -R $HPC_USER:$HPC_GROUP $SHARE_HOME/$HPC_USER/.ssh/id_rsa
 		chown -R $HPC_USER:$HPC_GROUP $SHARE_HOME/$HPC_USER/.ssh/id_rsa.pub
 		
