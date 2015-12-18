@@ -55,7 +55,7 @@ is_master()
 #
 install_pkgs()
 {
-    pkgs="zlib zlib-devel bzip2 bzip2-devel bzip2-libs openssl openssl-devel openssl-libs gcc gcc-c++ nfs-utils rpcbind mdadm"
+    pkgs="zlib zlib-devel bzip2 bzip2-devel bzip2-libs openssl openssl-devel openssl-libs gcc gcc-c++ nfs-utils rpcbind mdadm wget"
     yum -y install $pkgs
 }
 
@@ -109,14 +109,11 @@ setup_shares()
         setup_data_disks $SHARE_DATA
         echo "$SHARE_HOME    *(rw,async)" >> /etc/exports
         echo "$SHARE_DATA    *(rw,async)" >> /etc/exports
-		
-		
-        # systemctl status nfs-server && systemctl reload nfs-server || systemctl start nfs-server
-		
-		systemctl enable rpcbind || echo "Already enabled"
-		systemctl enable nfs-server || echo "Already enabled"
-		systemctl start rpcbind || echo "Already enabled"
-		systemctl start nfs-server || echo "Already enabled"
+
+        systemctl enable rpcbind || echo "Already enabled"
+        systemctl enable nfs-server || echo "Already enabled"
+        systemctl start rpcbind || echo "Already enabled"
+        systemctl start nfs-server || echo "Already enabled"
     else
         echo "master:$SHARE_HOME $SHARE_HOME    nfs4    rw,auto,_netdev 0 0" >> /etc/fstab
         echo "master:$SHARE_DATA $SHARE_DATA    nfs4    rw,auto,_netdev 0 0" >> /etc/fstab
