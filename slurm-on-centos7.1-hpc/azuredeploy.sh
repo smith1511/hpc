@@ -233,6 +233,10 @@ install_slurm()
 setup_hpc_user()
 {
     if is_master; then
+	
+	    id
+		echo $USER
+	
         mkdir -p $SHARE_HOME/$HPC_USER
         groupadd -g $HPC_GID $HPC_GROUP
         useradd -c "HPC User" -g $HPC_GROUP -d $SHARE_HOME/$HPC_USER -s /bin/bash -m -u $HPC_UID $HPC_USER
@@ -243,7 +247,6 @@ setup_hpc_user()
         sed -i 's/^Defaults[ ]*requiretty/#Defaults requiretty/g' /etc/sudoers
         mkdir -p $SHARE_HOME/$HPC_USER/.ssh
 		chown -R $HPC_USER:$HPC_GROUP $SHARE_HOME/$HPC_USER/.ssh
-		chmod 700 $SHARE_HOME/$HPC_USER/.ssh
 		
 		bash
         sudo -u $HPC_USER ssh-keygen -t rsa -f $SHARE_HOME/$HPC_USER/.ssh/id_rsa -q -P "" >> /tmp/out 2>&1
@@ -258,6 +261,8 @@ setup_hpc_user()
 		chown -R $HPC_USER:$HPC_GROUP $SHARE_HOME/$HPC_USER/.ssh/authorized_keys
 		chmod 644 $SHARE_HOME/$HPC_USER/.ssh/authorized_keys
 
+		chmod 700 $SHARE_HOME/$HPC_USER/.ssh
+		
         echo "Host *" > $SHARE_HOME/$HPC_USER/.ssh/config
         echo "    StrictHostKeyChecking no" >> $SHARE_HOME/$HPC_USER/.ssh/config
         echo "    UserKnownHostsFile /dev/null" >> $SHARE_HOME/$HPC_USER/.ssh/config
@@ -267,6 +272,7 @@ setup_hpc_user()
         chown $HPC_USER:$HPC_GROUP $SHARE_HOME/$HPC_USER/.ssh/config
         chown $HPC_USER:$HPC_GROUP $SHARE_DATA
     else
+        groupadd -g $HPC_GID $HPC_GROUP
         useradd -c "HPC User" -g $HPC_GROUP -d $SHARE_HOME/$HPC_USER -s /bin/bash -u $HPC_UID $HPC_USER
     fi
 
