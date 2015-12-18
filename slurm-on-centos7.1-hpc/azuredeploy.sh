@@ -241,8 +241,20 @@ setup_hpc_user()
         # Configure public key auth for the HPC user
         # We have to fix sudo first...
         sed -i 's/^Defaults[ ]*requiretty/#Defaults requiretty/g' /etc/sudoers
-        sudo -u $HPC_USER ssh-keygen -t rsa -f $SHARE_HOME/$HPC_USER/.ssh/id_rsa -q -P ""
+        mkdir -p $SHARE_HOME/$HPC_USER/.ssh
+		chown -R $HPC_USER:$HPC_GROUP $SHARE_HOME/$HPC_USER/.ssh
+		chmod 700 $SHARE_HOME/$HPC_USER/.ssh
+		
+        ssh-keygen -t rsa -f $SHARE_HOME/$HPC_USER/.ssh/id_rsa -q -P ""
+		chown -R $HPC_USER:$HPC_GROUP $SHARE_HOME/$HPC_USER/.ssh/id_rsa
+		chown -R $HPC_USER:$HPC_GROUP $SHARE_HOME/$HPC_USER/.ssh/id_rsa.pub
+		
+		chmod 600 $SHARE_HOME/$HPC_USER/.ssh/id_rsa
+		chmod 644 $SHARE_HOME/$HPC_USER/.ssh/id_rsa.pub
+		
         cat $SHARE_HOME/$HPC_USER/.ssh/id_rsa.pub > $SHARE_HOME/$HPC_USER/.ssh/authorized_keys
+		chown -R $HPC_USER:$HPC_GROUP $SHARE_HOME/$HPC_USER/.ssh/authorized_keys
+		chmod 644 $SHARE_HOME/$HPC_USER/.ssh/authorized_keys
 
         echo "Host *" > $SHARE_HOME/$HPC_USER/.ssh/config
         echo "    StrictHostKeyChecking no" >> $SHARE_HOME/$HPC_USER/.ssh/config
