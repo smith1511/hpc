@@ -251,8 +251,7 @@ setup_hpc_user()
         ssh-keygen -t rsa -f id_rsa -q -P "" >> /tmp/out 2>&1
 		echo "Exited with $?" >> /tmp/out 
 		cp id_rsa* $SHARE_HOME/$HPC_USER/.ssh/
-		chown -R $HPC_USER:$HPC_GROUP $SHARE_HOME/$HPC_USER/.ssh/id_rsa
-		chown -R $HPC_USER:$HPC_GROUP $SHARE_HOME/$HPC_USER/.ssh/id_rsa.pub
+		chown $HPC_USER:$HPC_GROUP $SHARE_HOME/$HPC_USER/.ssh/id_rsa*
 		
 		chmod 600 $SHARE_HOME/$HPC_USER/.ssh/id_rsa
 		chmod 644 $SHARE_HOME/$HPC_USER/.ssh/id_rsa.pub
