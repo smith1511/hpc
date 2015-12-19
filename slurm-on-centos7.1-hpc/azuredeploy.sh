@@ -248,7 +248,7 @@ setup_hpc_user()
     if is_master; then
 
         mkdir -p $SHARE_HOME/$HPC_USER/.ssh
-        chown -R $HPC_USER:$HPC_GROUP $SHARE_HOME/$HPC_USER/.ssh
+        chown $HPC_USER:$HPC_GROUP $SHARE_HOME/$HPC_USER/.ssh
         
         # Configure public key auth for the HPC user
         sudo -u $HPC_USER ssh-keygen -t rsa -f $SHARE_HOME/$HPC_USER/.ssh/id_rsa -q -P ""
