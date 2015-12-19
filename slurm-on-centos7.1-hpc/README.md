@@ -18,10 +18,10 @@ Deploys a SLURM cluster with head node and n worker nodes.
 
 ## Accessing the cluster
 
-Simply SSH to the master node using the DNS name _**dnsName**_._**location**_.cloudapp.azure.com, for example, slurm12-hpc.westus.cloudapp.azure.com.
+Simply SSH to the master node using the DNS name _**dnsName**_._**location**_.cloudapp.azure.com, for example, centos71-hpc.westus.cloudapp.azure.com.
 
 ```
-# ssh azureuser@slurm12-hpc.westus.cloudapp.azure.com
+# ssh azureuser@centos71-hpc.westus.cloudapp.azure.com
 ```
 
 You can log into the head node using the admin user and password specified.  Once on the head node you can switch to the HPC user.  For security reasons the HPC user cannot login to the head node directly.
