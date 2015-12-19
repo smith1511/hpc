@@ -236,22 +236,23 @@ setup_hpc_user()
     sed -i 's/enforcing/disabled/g' /etc/selinux/config
     setenforce permissive
 
-    # create user
+    # create HPC group and user
     mkdir -p $SHARE_HOME/$HPC_USER
     groupadd -g $HPC_GID $HPC_GROUP
     useradd -c "HPC User" -g $HPC_GROUP -d $SHARE_HOME/$HPC_USER -s /bin/bash -u $HPC_UID $HPC_USER
 
     # Don't require password for HPC user sudo
     echo "$HPC_USER ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+    
+    # Disable tty requirement for sudo
     sed -i 's/^Defaults[ ]*requiretty/#Defaults requiretty/g' /etc/sudoers
 
     if is_master; then
 
         mkdir -p $SHARE_HOME/$HPC_USER/.ssh
-        chown $HPC_USER:$HPC_GROUP $SHARE_HOME/$HPC_USER/.ssh
         
         # Configure public key auth for the HPC user
-        sudo -u $HPC_USER ssh-keygen -t rsa -f $SHARE_HOME/$HPC_USER/.ssh/id_rsa -q -P ""
+        ssh-keygen -t rsa -f $SHARE_HOME/$HPC_USER/.ssh/id_rsa -q -P ""
         cat $SHARE_HOME/$HPC_USER/.ssh/id_rsa.pub > $SHARE_HOME/$HPC_USER/.ssh/authorized_keys
 
         echo "Host *" > $SHARE_HOME/$HPC_USER/.ssh/config
@@ -259,9 +260,17 @@ setup_hpc_user()
         echo "    UserKnownHostsFile /dev/null" >> $SHARE_HOME/$HPC_USER/.ssh/config
         echo "    PasswordAuthentication no" >> $SHARE_HOME/$HPC_USER/.ssh/config
 
+        # Fix .ssh folder ownership
         chown -R $HPC_USER:$HPC_GROUP $SHARE_HOME/$HPC_USER
+        
+        # Fix permissions
         chmod 700 $SHARE_HOME/$HPC_USER/.ssh
-        chmod 600 $SHARE_HOME/$HPC_USER/.ssh/*
+        chmod 644 $SHARE_HOME/$HPC_USER/.ssh/config
+        chmod 644 $SHARE_HOME/$HPC_USER/.ssh/authorized_keys
+        chmod 600 $SHARE_HOME/$HPC_USER/.ssh/id_rsa
+        chmod 644 $SHARE_HOME/$HPC_USER/.ssh/id_rsa.pub
+        
+        # Give hpc user access to data share
         chown $HPC_USER:$HPC_GROUP $SHARE_DATA
     fi
 }
