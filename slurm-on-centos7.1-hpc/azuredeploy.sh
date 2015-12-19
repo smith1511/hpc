@@ -235,19 +235,18 @@ setup_hpc_user()
     # disable selinux
     sed -i 's/enforcing/disabled/g' /etc/selinux/config
     setenforce permissive
-
-    # create HPC group and user
-    mkdir -p $SHARE_HOME/$HPC_USER
+    
     groupadd -g $HPC_GID $HPC_GROUP
-    useradd -c "HPC User" -g $HPC_GROUP -d $SHARE_HOME/$HPC_USER -s /bin/bash -u $HPC_UID $HPC_USER
 
     # Don't require password for HPC user sudo
     echo "$HPC_USER ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
     
     # Disable tty requirement for sudo
-    sed -i 's/^Defaults[ ]*requiretty/#Defaults requiretty/g' /etc/sudoers
+    sed -i 's/^Defaults[ ]*requiretty/# Defaults requiretty/g' /etc/sudoers
 
     if is_master; then
+    
+        useradd -c "HPC User" -g $HPC_GROUP -m -d $SHARE_HOME/$HPC_USER -s /bin/bash -u $HPC_UID $HPC_USER
 
         mkdir -p $SHARE_HOME/$HPC_USER/.ssh
         
@@ -262,7 +261,7 @@ setup_hpc_user()
 
         # Fix .ssh folder ownership
         chown -R $HPC_USER:$HPC_GROUP $SHARE_HOME/$HPC_USER
-        
+
         # Fix permissions
         chmod 700 $SHARE_HOME/$HPC_USER/.ssh
         chmod 644 $SHARE_HOME/$HPC_USER/.ssh/config
@@ -272,6 +271,8 @@ setup_hpc_user()
         
         # Give hpc user access to data share
         chown $HPC_USER:$HPC_GROUP $SHARE_DATA
+    else
+        useradd -c "HPC User" -g $HPC_GROUP -d $SHARE_HOME/$HPC_USER -s /bin/bash -u $HPC_UID $HPC_USER
     fi
 }
 
