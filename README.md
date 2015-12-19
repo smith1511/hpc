@@ -1,2 +1,1 @@
-# hpc
-Tools for Azure HPC
+# HPC Azure ARM Templates

@@ -1,8 +1,8 @@
-# Azure SLES 12 HPC ARM Template
+# Azure CentOS 7.1 HPC ARM Template
 
 Deploys a SLURM cluster with head node and n worker nodes.
 
-<a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fsmith1511%2Fhpc%2Fmaster%2Fslurm-on-sles12-hpc%2Fazuredeploy.json" target="_blank">
+<a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fsmith1511%2Fhpc%2Ffeature%2Fcentos70%2Fslurm-on-centos7.1-hpc%2Fazuredeploy.json" target="_blank">
    <img alt="Deploy to Azure" src="http://azuredeploy.net/deploybutton.png"/>
 </a>
 
@@ -18,10 +18,10 @@ Deploys a SLURM cluster with head node and n worker nodes.
 
 ## Accessing the cluster
 
-Simply SSH to the master node using the DNS name _**dnsName**_._**location**_.cloudapp.azure.com, for example, sles12-hpc.westus.cloudapp.azure.com.
+Simply SSH to the master node using the DNS name _**dnsName**_._**location**_.cloudapp.azure.com, for example, centos71-hpc.westus.cloudapp.azure.com.
 
 ```
-# ssh azureuser@sles12-hpc.westus.cloudapp.azure.com
+# ssh azureuser@centos71-hpc.westus.cloudapp.azure.com
 ```
 
 You can log into the head node using the admin user and password specified.  Once on the head node you can switch to the HPC user.  For security reasons the HPC user cannot login to the head node directly.

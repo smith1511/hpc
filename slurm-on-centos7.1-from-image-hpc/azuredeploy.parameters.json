@@ -1,0 +1,33 @@
+{
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "ImageBlob": {
+      "value": "20150826185255-00853603622-centos71-rdma-os1.vhd"
+    },
+    "existingStorageAccountName": {
+      "value": ""
+    },
+    "dnsPrefix": {
+      "value": ""
+    },
+    "adminUserName": {
+      "value": "azureuser"
+    },
+    "adminPassword": {
+      "value": ""
+    },
+    "hpcUserName": {
+      "value": "hpc"
+    },
+    "headNodeSize": {
+      "value": "Standard_A8"
+    },
+    "workerNodeSize": {
+      "value": "Standard_A9"
+    },
+    "workerNodeCount": {
+      "value": 2
+    }
+  }
+}
