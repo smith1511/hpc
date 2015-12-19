@@ -232,11 +232,12 @@ install_slurm()
 #
 setup_hpc_user()
 {
+    # disable selinux
+    sed -i 's/enforcing/disabled/g' /etc/selinux/config
+	setenforce permissive
+
     if is_master; then
-	
-	    id
-		echo $USER
-	
+
         mkdir -p $SHARE_HOME/$HPC_USER
         groupadd -g $HPC_GID $HPC_GROUP
         useradd -c "HPC User" -g $HPC_GROUP -d $SHARE_HOME/$HPC_USER -s /bin/bash -m -u $HPC_UID $HPC_USER
