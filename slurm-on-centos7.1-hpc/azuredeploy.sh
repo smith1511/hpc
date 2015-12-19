@@ -243,6 +243,7 @@ setup_hpc_user()
 
     # Don't require password for HPC user sudo
     echo "$HPC_USER ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+	sed -i 's/^Defaults[ ]*requiretty/#Defaults requiretty/g' /etc/sudoers
 	
     if is_master; then
 
