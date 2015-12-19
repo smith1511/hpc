@@ -155,7 +155,7 @@
     "vnetID": "[resourceId('Microsoft.Network/virtualNetworks',variables('networkSettings').virtualNetworkName)]",
     "subnetRef": "[concat(variables('vnetID'),'/subnets/',variables('networkSettings').subnet.dse.name)]",
     "templateBaseUrl": "https://raw.githubusercontent.com/smith1511/hpc/feature/centos70/slurm-on-centos7.1-hpc/",
-    "installationCLI": "[concat('bash azuredeploy.sh ', variables('masterVMName'), ' ', variables('workerVMName'), ' ', parameters('workerNodeCount'), ' ', parameters('hpcUserName'), ' ', variables('templateBaseUrl'))]",
+    "installationCLI": "[concat('bash azuredeploy.sh ', variables('masterVMName'), ' ', variables('workerVMName'), ' ', parameters('workerNodeCount'), ' ', parameters('hpcUserName'), ' ', variables('templateBaseUrl'), ' >> /tmp/install.log 2>&1')]",
     "storageAccountType": "Standard_LRS"
   },
   "resources": [
