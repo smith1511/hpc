@@ -125,9 +125,9 @@ setup_shares()
     fi
 }
 
-# Downloads/builds/installs munged on the node.  
-# The munge key is generated on the master node and placed 
-# in the data share.  
+# Downloads/builds/installs munged on the node.
+# The munge key is generated on the master node and placed
+# in the data share.
 # Worker nodes copy the existing key from the data share.
 #
 install_munge()
@@ -153,7 +153,7 @@ install_munge()
 
     if is_master; then
         dd if=/dev/urandom bs=1 count=1024 > /etc/munge/munge.key
-	mkdir -p $SLURM_CONF_DIR
+    mkdir -p $SLURM_CONF_DIR
         cp /etc/munge/munge.key $SLURM_CONF_DIR
     else
         cp $SLURM_CONF_DIR/munge.key /etc/munge/munge.key
@@ -212,7 +212,7 @@ install_slurm()
     tar xvfz slurm-$SLURM_VERSION.tar.gz
 
     cd slurm-slurm-$SLURM_VERSION
-	
+
     ./configure -libdir=/usr/lib64 --prefix=/usr --sysconfdir=/etc/slurm && make && make install
 
     install_slurm_config
@@ -232,16 +232,26 @@ install_slurm()
 #
 setup_hpc_user()
 {
-    if is_master; then
-        mkdir -p $SHARE_HOME/$HPC_USER
-        groupadd -g $HPC_GID $HPC_GROUP
-        useradd -c "HPC User" -g $HPC_GROUP -d $SHARE_HOME/$HPC_USER -s /bin/bash -m -u $HPC_UID $HPC_USER
-        chown -R $HPC_USER:$HPC_GROUP $SHARE_HOME/$HPC_USER
+    # disable selinux
+    sed -i 's/enforcing/disabled/g' /etc/selinux/config
+    setenforce permissive
+    
+    groupadd -g $HPC_GID $HPC_GROUP
 
+    # Don't require password for HPC user sudo
+    echo "$HPC_USER ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+    
+    # Disable tty requirement for sudo
+    sed -i 's/^Defaults[ ]*requiretty/# Defaults requiretty/g' /etc/sudoers
+
+    if is_master; then
+    
+        useradd -c "HPC User" -g $HPC_GROUP -m -d $SHARE_HOME/$HPC_USER -s /bin/bash -u $HPC_UID $HPC_USER
+
+        mkdir -p $SHARE_HOME/$HPC_USER/.ssh
+        
         # Configure public key auth for the HPC user
-        # We have to fix sudo first...
-        sed -i 's/^Defaults[ ]*requiretty/#Defaults requiretty/g' /etc/sudoers
-        sudo -u $HPC_USER ssh-keygen -t rsa -f $SHARE_HOME/$HPC_USER/.ssh/id_rsa -q -P ""
+        ssh-keygen -t rsa -f $SHARE_HOME/$HPC_USER/.ssh/id_rsa -q -P ""
         cat $SHARE_HOME/$HPC_USER/.ssh/id_rsa.pub > $SHARE_HOME/$HPC_USER/.ssh/authorized_keys
 
         echo "Host *" > $SHARE_HOME/$HPC_USER/.ssh/config
@@ -249,15 +259,21 @@ setup_hpc_user()
         echo "    UserKnownHostsFile /dev/null" >> $SHARE_HOME/$HPC_USER/.ssh/config
         echo "    PasswordAuthentication no" >> $SHARE_HOME/$HPC_USER/.ssh/config
 
-        chown $HPC_USER:$HPC_GROUP $SHARE_HOME/$HPC_USER/.ssh/authorized_keys
-        chown $HPC_USER:$HPC_GROUP $SHARE_HOME/$HPC_USER/.ssh/config
+        # Fix .ssh folder ownership
+        chown -R $HPC_USER:$HPC_GROUP $SHARE_HOME/$HPC_USER
+
+        # Fix permissions
+        chmod 700 $SHARE_HOME/$HPC_USER/.ssh
+        chmod 644 $SHARE_HOME/$HPC_USER/.ssh/config
+        chmod 644 $SHARE_HOME/$HPC_USER/.ssh/authorized_keys
+        chmod 600 $SHARE_HOME/$HPC_USER/.ssh/id_rsa
+        chmod 644 $SHARE_HOME/$HPC_USER/.ssh/id_rsa.pub
+        
+        # Give hpc user access to data share
         chown $HPC_USER:$HPC_GROUP $SHARE_DATA
     else
         useradd -c "HPC User" -g $HPC_GROUP -d $SHARE_HOME/$HPC_USER -s /bin/bash -u $HPC_UID $HPC_USER
     fi
-
-    # Don't require password for HPC user sudo
-    echo "$HPC_USER ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
 }
 
 # Sets all common environment variables and system parameters.

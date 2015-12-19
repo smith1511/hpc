@@ -1,4 +1,4 @@
-# Azure SLES 12 HPC ARM Template
+# Azure CentOS 7.1 HPC ARM Template
 
 Deploys a SLURM cluster with head node and n worker nodes.
 
