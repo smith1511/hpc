@@ -55,13 +55,13 @@ is_master()
 # Installs all required packages.
 #
 install_pkgs()
-{
+{    
+    pkgs="zlib zlib-devel bzip2 bzip2-devel bzip2-libs openssl openssl-devel openssl-libs gcc gcc-c++ nfs-utils rpcbind mdadm wget"
+    yum -y install $pkgs
+    
     # Install extras OSS repo
     wget http://dl.fedoraproject.org/pub/epel/7/x86_64/e/epel-release-7-5.noarch.rpm
     rpm -ivh epel-release-7-5.noarch.rpm
-    
-    pkgs="zlib zlib-devel bzip2 bzip2-devel bzip2-libs openssl openssl-devel openssl-libs gcc gcc-c++ nfs-utils rpcbind mdadm wget"
-    yum -y install $pkgs
 }
 
 # Partitions all data disks attached to the VM and creates
