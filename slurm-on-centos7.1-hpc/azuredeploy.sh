@@ -18,6 +18,7 @@ WORKER_HOSTNAME_PREFIX=$2
 WORKER_COUNT=$3
 TEMPLATE_BASE_URL="$5"
 LAST_WORKER_INDEX=$(($WORKER_COUNT - 1))
+SCRIPTS_BASE_URL=$TEMPLATE_BASE_URL/scripts
 
 # Shares
 SHARE_HOME=/share/home
@@ -178,10 +179,10 @@ install_slurm_config()
 
         mkdir -p $SLURM_CONF_DIR
 
-        if [ -e "$TEMPLATE_BASE_URL/slurm.template.conf" ]; then
-            cp "$TEMPLATE_BASE_URL/slurm.template.conf" .
+        if [ -e "$SCRIPTS_BASE_URL/slurm.template.conf" ]; then
+            cp "$SCRIPTS_BASE_URL/slurm.template.conf" .
         else
-            wget "$TEMPLATE_BASE_URL/slurm.template.conf"
+            wget "$SCRIPTS_BASE_URL/slurm.template.conf"
         fi
 
         cat slurm.template.conf |
@@ -218,13 +219,13 @@ install_slurm()
     install_slurm_config
 
     if is_master; then
-        wget $TEMPLATE_BASE_URL/slurmctld.sh
+        wget $SCRIPTS_BASE_URL/slurmctld.sh
         mv slurmctld.sh /etc/init.d/slurmctld
         chmod +x /etc/init.d/slurmctld
         systemctl enable slurmctld
         systemctl start slurmctld
     else
-        wget $TEMPLATE_BASE_URL/slurmd.sh
+        wget $SCRIPTS_BASE_URL/slurmd.sh
         mv slurmd.sh /etc/init.d/slurmd
         chmod +x /etc/init.d/slurmd
         systemctl enable slurmd
