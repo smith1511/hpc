@@ -285,10 +285,34 @@ setup_env()
     echo "$HPC_USER soft memlock unlimited" >> /etc/security/limits.conf
 
     # Intel MPI config for IB
-    echo "# IB Config for MPI" > /etc/profile.d/hpc.sh
-    echo "export I_MPI_FABRICS=shm:dapl" >> /etc/profile.d/hpc.sh
-    echo "export I_MPI_DAPL_PROVIDER=ofa-v2-ib0" >> /etc/profile.d/hpc.sh
-    echo "export I_MPI_DYNAMIC_CONNECTION=0" >> /etc/profile.d/hpc.sh
+    echo "# IB Config for MPI" > /etc/profile.d/mpi.sh
+    echo "export I_MPI_FABRICS=shm:dapl" >> /etc/profile.d/mpi.sh
+    echo "export I_MPI_DAPL_PROVIDER=ofa-v2-ib0" >> /etc/profile.d/mpi.sh
+    echo "export I_MPI_DYNAMIC_CONNECTION=0" >> /etc/profile.d/mpi.sh
+}
+
+install_easybuild()
+{
+    yum -y install Lmod python-devel python-pip gcc gcc-c++ patch unzip tcl tcl-devel libibverbs libibverbs-devel
+    pip install vsc-base
+
+    EASYBUILD_HOME=$SHARE_HOME/$HPC_USER/EasyBuild
+
+    if is_master; then
+        su - $HPC_USER -c "pip install --install-option --prefix=$EASYBUILD_HOME https://github.com/hpcugent/easybuild-framework/archive/easybuild-framework-v2.5.0.tar.gz"
+
+        # Add Lmod to the HPC users path
+        echo 'export PATH=/usr/share/lmod/6.0.15/libexec:$PATH' >> $SHARE_HOME/$HPC_USER/.bashrc
+
+        # Setup Easybuild configuration and paths
+        echo 'export PATH=$HOME/EasyBuild/bin:$PATH' >> $SHARE_HOME/$HPC_USER/.bashrc
+        echo 'export PYTHONPATH=$HOME/EasyBuild/lib/python2.7/site-packages:$PYTHONPATH' >> $SHARE_HOME/$HPC_USER/.bashrc
+        echo "export MODULEPATH=$EASYBUILD_HOME/modules/all" >> $SHARE_HOME/$HPC_USER/.bashrc
+        echo "export EASYBUILD_MODULES_TOOL=Lmod" >> $SHARE_HOME/$HPC_USER/.bashrc
+        echo "export EASYBUILD_INSTALLPATH=$EASYBUILD_HOME" >> $SHARE_HOME/$HPC_USER/.bashrc
+        echo "export EASYBUILD_DEBUG=1" >> $SHARE_HOME/$HPC_USER/.bashrc
+        echo "source /usr/share/lmod/6.0.15/init/bash" >> $SHARE_HOME/$HPC_USER/.bashrc
+    fi
 }
 
 install_pkgs
@@ -297,3 +321,4 @@ setup_hpc_user
 install_munge
 install_slurm
 setup_env
+install_easybuild
