@@ -297,7 +297,7 @@ setup_env()
 install_easybuild()
 {
     yum -y install Lmod python-devel python-pip gcc gcc-c++ patch unzip tcl tcl-devel libibverbs libibverbs-devel
-    pip install vsc-base vsc-utils
+    pip install vsc-base
     
     EASYBUILD_HOME=$SHARE_HOME/$HPC_USER/EasyBuild
     
