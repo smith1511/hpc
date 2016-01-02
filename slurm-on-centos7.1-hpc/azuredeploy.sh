@@ -152,7 +152,7 @@ install_munge()
 
     if is_master; then
         dd if=/dev/urandom bs=1 count=1024 > /etc/munge/munge.key
-    mkdir -p $SLURM_CONF_DIR
+        mkdir -p $SLURM_CONF_DIR
         cp /etc/munge/munge.key $SLURM_CONF_DIR
     else
         cp $SLURM_CONF_DIR/munge.key /etc/munge/munge.key
@@ -160,8 +160,9 @@ install_munge()
 
     chown munge:munge /etc/munge/munge.key
     chmod 0400 /etc/munge/munge.key
-
-    /etc/init.d/munge start
+    
+    systemctl enable munge.service
+    systemctl start munge.service
 
     cd ..
 }
@@ -217,9 +218,17 @@ install_slurm()
     install_slurm_config
 
     if is_master; then
-        /usr/sbin/slurmctld -vvvv
+        wget $TEMPLATE_BASE_URL/slurmctld.sh
+        mv slurmctld.sh /etc/init.d/slurmctld
+        chmod +x /etc/init.d/slurmctld
+        systemctl enable slurmctld
+        systemctl start slurmctld
     else
-        /usr/sbin/slurmd -vvvv
+        wget $TEMPLATE_BASE_URL/slurmd.sh
+        mv slurmd.sh /etc/init.d/slurmd
+        chmod +x /etc/init.d/slurmd
+        systemctl enable slurmd
+        systemctl start slurmd
     fi
 
     cd ..
