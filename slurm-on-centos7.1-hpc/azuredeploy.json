@@ -28,7 +28,7 @@
       }
     },
     "aadApplicationPassword": {
-      "type": "string",
+      "type": "securestring",
       "metadata": {
         "description": "Azure AD application password for the above application."
       }
