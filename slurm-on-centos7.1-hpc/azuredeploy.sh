@@ -56,12 +56,8 @@ is_master()
 #
 install_pkgs()
 {    
-    pkgs="zlib zlib-devel bzip2 bzip2-devel bzip2-libs openssl openssl-devel openssl-libs gcc gcc-c++ nfs-utils rpcbind mdadm wget"
+    pkgs="epel-release zlib zlib-devel bzip2 bzip2-devel bzip2-libs openssl openssl-devel openssl-libs gcc gcc-c++ nfs-utils rpcbind mdadm wget"
     yum -y install $pkgs
-    
-    # Install extras OSS repo
-    wget http://dl.fedoraproject.org/pub/epel/7/x86_64/e/epel-release-7-5.noarch.rpm
-    rpm -ivh epel-release-7-5.noarch.rpm
 }
 
 # Partitions all data disks attached to the VM and creates
@@ -318,7 +314,17 @@ install_easybuild()
     fi
 }
 
+install_azure_cli()
+{
+    if is_master; then
+        yum -y install nodejs
+        yum -y install npm
+        npm install -g azure-cli
+    fi
+}
+
 install_pkgs
+install_azure_cli
 setup_shares
 setup_hpc_user
 install_munge
