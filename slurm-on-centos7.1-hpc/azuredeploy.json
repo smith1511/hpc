@@ -21,6 +21,24 @@
         "description": "Admin password. Pick a complex password with uppercase letters, lowercase letters, digits, and symbols. The password should not be longer than 16. Otherwise you'll get a BadRequest error."
       }
     },
+    "aadApplicationId": {
+      "type": "string",
+      "metadata": {
+        "description": "Azure AD application Id.  This is used to authenticate with Azure and needs permissions to suspend and resume VMs within the resource group."
+      }
+    },
+    "aadApplicationPassword": {
+      "type": "string",
+      "metadata": {
+        "description": "Azure AD application password for the above application."
+      }
+    },
+    "aadTenantId": {
+      "type": "string",
+      "metadata": {
+        "description": "Azure AD tenant Id that the application resides in."
+      }
+    },
     "hpcUserName": {
       "type": "string",
       "defaultValue": "hpc",
@@ -155,7 +173,7 @@
     "vnetID": "[resourceId('Microsoft.Network/virtualNetworks',variables('networkSettings').virtualNetworkName)]",
     "subnetRef": "[concat(variables('vnetID'),'/subnets/',variables('networkSettings').subnet.dse.name)]",
     "templateBaseUrl": "https://raw.githubusercontent.com/smith1511/hpc/feature/elastic-slurm/slurm-on-centos7.1-hpc/",
-    "installationCLI": "[concat('bash azuredeploy.sh ', variables('masterVMName'), ' ', variables('workerVMName'), ' ', parameters('workerNodeCount'), ' ', parameters('hpcUserName'), ' ', variables('templateBaseUrl'))]",
+    "installationCLI": "[concat('bash azuredeploy.sh ', variables('masterVMName'), ' ', variables('workerVMName'), ' ', parameters('workerNodeCount'), ' ', parameters('hpcUserName'), ' ', variables('templateBaseUrl'), ' ', parameters('aadApplicationId'), ' \'', parameters('aadApplicationPassword'), '\' ', parameters('aadTenantId'))]",
     "storageAccountType": "Standard_LRS"
   },
   "resources": [

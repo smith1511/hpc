@@ -11,6 +11,15 @@
     "adminPassword": {
       "value": ""
     },
+    "aadApplicationId": {
+      "value": ""
+    },
+    "aadApplicationPassword": {
+      "value": ""
+    },
+    "aadTenantId": {
+      "value": ""
+    },
     "hpcUserName": {
       "value": "hpc"
     },

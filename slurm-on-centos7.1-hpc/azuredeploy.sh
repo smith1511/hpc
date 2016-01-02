@@ -7,8 +7,9 @@ if [[ $(id -u) -ne 0 ]] ; then
     exit 1
 fi
 
-if [ $# != 5 ]; then
+if [[ $# != 5 ]] && [[ $# != 8 ]]; then
     echo "Usage: $0 <MasterHostname> <WorkerHostnamePrefix> <WorkerNodeCount> <HPCUserName> <TemplateBaseUrl>"
+    echo "       $0 <MasterHostname> <WorkerHostnamePrefix> <WorkerNodeCount> <HPCUserName> <TemplateBaseUrl> <ApplicationId> '<ApplicationPassword>' <TenantId>"
     exit 1
 fi
 
@@ -17,6 +18,10 @@ MASTER_HOSTNAME=$1
 WORKER_HOSTNAME_PREFIX=$2
 WORKER_COUNT=$3
 TEMPLATE_BASE_URL="$5"
+APPLICATION_ID="$6"
+APPLICATION_PASSWORD="$7"
+TENANT_ID="$8"
+
 LAST_WORKER_INDEX=$(($WORKER_COUNT - 1))
 SCRIPTS_BASE_URL=$TEMPLATE_BASE_URL/scripts
 
@@ -185,10 +190,28 @@ install_slurm_config()
             wget "$SCRIPTS_BASE_URL/slurm.template.conf"
         fi
 
-        cat slurm.template.conf |
-        sed 's/__MASTER__/'"$MASTER_HOSTNAME"'/g' |
-                sed 's/__WORKER_HOSTNAME_PREFIX__/'"$WORKER_HOSTNAME_PREFIX"'/g' |
-                sed 's/__LAST_WORKER_INDEX__/'"$LAST_WORKER_INDEX"'/g' > $SLURM_CONF_DIR/slurm.conf
+        if [ -n "$APPLICATION_ID" ]; then
+            # Set linear resource allocation and cloud node state
+            cat slurm.template.conf |
+            sed 's/__MASTER__/'"$MASTER_HOSTNAME"'/g' |
+                    sed 's/__WORKER_HOSTNAME_PREFIX__/'"$WORKER_HOSTNAME_PREFIX"'/g' |
+                    sed 's/__LAST_WORKER_INDEX__/'"$LAST_WORKER_INDEX"'/g' |
+                    sed 's/__NODE_STATE__/CLOUD/g' |
+                    sed 's/^SelectType=.*/SelectType=select\/linear/g' | 
+                    sed 's/^SelectTypeParameters=.*/#SelectTypeParameters=/g' > $SLURM_CONF_DIR/slurm.conf
+        else
+            # Set cons_res selection for CPU level allocation.  Disable suspend and resume
+            cat slurm.template.conf |
+            sed 's/__MASTER__/'"$MASTER_HOSTNAME"'/g' |
+                    sed 's/__WORKER_HOSTNAME_PREFIX__/'"$WORKER_HOSTNAME_PREFIX"'/g' |
+                    sed 's/__LAST_WORKER_INDEX__/'"$LAST_WORKER_INDEX"'/g' |
+                    sed 's/__NODE_STATE__/UNKNOWN/g' |
+                    sed 's/^SelectType=.*/SelectType=select\/cons_res/g' | 
+                    sed 's/^SelectTypeParameters=.*/SelectTypeParameters=CR_CPU/g' |
+                    sed 's/^SuspendProgram=.*/#SuspendProgram=/g' | 
+                    sed 's/^ResumeProgram=.*/#ResumeProgram=/g' > $SLURM_CONF_DIR/slurm.conf
+        fi
+
     fi
 
     ln -s $SLURM_CONF_DIR/slurm.conf /etc/slurm/slurm.conf
@@ -219,6 +242,28 @@ install_slurm()
     install_slurm_config
 
     if is_master; then
+    
+        if [ -n "$APPLICATION_ID" ]; then
+            # Install the suspend and resume scripts
+            wget $SCRIPTS_BASE_URL/slurm_suspend.template.sh
+            cat slurm_suspend.template.sh |
+            sed 's/__APPLICATION_ID__/'"$APPLICATION_ID"'/g' |
+                    sed 's/__APPLICATION_PASSWORD__/'"$APPLICATION_PASSWORD"'/g' |
+                    sed 's/__TENANT_ID__/'"$TENANT_ID"'/g' > $SLURM_CONF_DIR/slurm_suspend.sh
+
+            chown slurm:slurm $SLURM_CONF_DIR/slurm_suspend.sh
+            chmod 770 $SLURM_CONF_DIR/slurm_suspend.sh
+
+            wget $SCRIPTS_BASE_URL/slurm_resume.template.sh
+            cat slurm_resume.template.sh |
+            sed 's/__APPLICATION_ID__/'"$APPLICATION_ID"'/g' |
+                    sed 's/__APPLICATION_PASSWORD__/'"$APPLICATION_PASSWORD"'/g' |
+                    sed 's/__TENANT_ID__/'"$TENANT_ID"'/g' > $SLURM_CONF_DIR/slurm_resume.sh
+                    
+            chown slurm:slurm $SLURM_CONF_DIR/slurm_resume.sh
+            chmod 770 $SLURM_CONF_DIR/slurm_resume.sh
+        fi
+
         wget $SCRIPTS_BASE_URL/slurmctld.sh
         mv slurmctld.sh /etc/init.d/slurmctld
         chmod +x /etc/init.d/slurmctld
