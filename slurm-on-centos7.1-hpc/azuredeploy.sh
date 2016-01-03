@@ -7,9 +7,9 @@ if [[ $(id -u) -ne 0 ]] ; then
     exit 1
 fi
 
-if [[ $# != 5 ]] && [[ $# != 8 ]]; then
+if [[ $# != 5 ]] && [[ $# != 9 ]]; then
     echo "Usage: $0 <MasterHostname> <WorkerHostnamePrefix> <WorkerNodeCount> <HPCUserName> <TemplateBaseUrl>"
-    echo "       $0 <MasterHostname> <WorkerHostnamePrefix> <WorkerNodeCount> <HPCUserName> <TemplateBaseUrl> <ApplicationId> '<ApplicationPassword>' <TenantId>"
+    echo "       $0 <MasterHostname> <WorkerHostnamePrefix> <WorkerNodeCount> <HPCUserName> <TemplateBaseUrl> <ApplicationId> '<ApplicationPassword>' <TenantId> <ResourceGroup>"
     exit 1
 fi
 
@@ -21,6 +21,7 @@ TEMPLATE_BASE_URL="$5"
 APPLICATION_ID="$6"
 APPLICATION_PASSWORD="$7"
 TENANT_ID="$8"
+RESOURCE_GROUP="$9"
 
 LAST_WORKER_INDEX=$(($WORKER_COUNT - 1))
 SCRIPTS_BASE_URL=$TEMPLATE_BASE_URL/scripts
@@ -225,7 +226,7 @@ install_slurm()
 {
     groupadd -g $SLURM_GID $SLURM_GROUP
 
-    useradd -M -u $SLURM_UID -c "SLURM service account" -g $SLURM_GROUP -s /usr/sbin/nologin $SLURM_USER
+    useradd -M -u $SLURM_UID -c "SLURM service account" -g $SLURM_GROUP -d /tmp -s /usr/sbin/nologin $SLURM_USER
 
     mkdir -p /etc/slurm /var/spool/slurmd /var/run/slurmd /var/run/slurmctld /var/log/slurmd /var/log/slurmctld
 
@@ -249,19 +250,21 @@ install_slurm()
             cat slurm_suspend.template.sh |
             sed 's/__APPLICATION_ID__/'"$APPLICATION_ID"'/g' |
                     sed 's/__APPLICATION_PASSWORD__/'"$APPLICATION_PASSWORD"'/g' |
+                    sed 's/__RESOURCE_GROUP__/'"$RESOURCE_GROUP"'/g' |
                     sed 's/__TENANT_ID__/'"$TENANT_ID"'/g' > $SLURM_CONF_DIR/slurm_suspend.sh
 
             chown slurm:slurm $SLURM_CONF_DIR/slurm_suspend.sh
-            chmod 770 $SLURM_CONF_DIR/slurm_suspend.sh
+            chmod 750 $SLURM_CONF_DIR/slurm_suspend.sh
 
             wget $SCRIPTS_BASE_URL/slurm_resume.template.sh
             cat slurm_resume.template.sh |
             sed 's/__APPLICATION_ID__/'"$APPLICATION_ID"'/g' |
                     sed 's/__APPLICATION_PASSWORD__/'"$APPLICATION_PASSWORD"'/g' |
+                    sed 's/__RESOURCE_GROUP__/'"$RESOURCE_GROUP"'/g' |
                     sed 's/__TENANT_ID__/'"$TENANT_ID"'/g' > $SLURM_CONF_DIR/slurm_resume.sh
                     
             chown slurm:slurm $SLURM_CONF_DIR/slurm_resume.sh
-            chmod 770 $SLURM_CONF_DIR/slurm_resume.sh
+            chmod 750 $SLURM_CONF_DIR/slurm_resume.sh
         fi
 
         wget $SCRIPTS_BASE_URL/slurmctld.sh
