@@ -168,8 +168,8 @@ install_munge()
     chown munge:munge /etc/munge/munge.key
     chmod 0400 /etc/munge/munge.key
     
-    systemctl enable munge.service
-    systemctl start munge.service
+    systemctl enable munge
+    systemctl start munge
 
     cd ..
 }
@@ -267,15 +267,15 @@ install_slurm()
             chmod 750 $SLURM_CONF_DIR/slurm_resume.sh
         fi
 
-        wget $SCRIPTS_BASE_URL/slurmctld.sh
-        mv slurmctld.sh /etc/init.d/slurmctld
-        chmod +x /etc/init.d/slurmctld
+        wget $SCRIPTS_BASE_URL/slurmctld.service
+        mv slurmctld.service /usr/lib/systemd/system
+        systemctl daemon-reload
         systemctl enable slurmctld
         systemctl start slurmctld
     else
-        wget $SCRIPTS_BASE_URL/slurmd.sh
-        mv slurmd.sh /etc/init.d/slurmd
-        chmod +x /etc/init.d/slurmd
+        wget $SCRIPTS_BASE_URL/slurmd.service
+        mv slurmd.service /usr/lib/systemd/system
+        systemctl daemon-reload
         systemctl enable slurmd
         systemctl start slurmd
     fi
