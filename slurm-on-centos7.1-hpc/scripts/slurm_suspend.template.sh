@@ -13,14 +13,14 @@ if [ -z "$1" ]; then
     exit 0
 fi
 
-azure login -u "$APPLICATION_ID" -p "$APPLICATION_PASSWORD" --service-principal --tenant "$TENANT" >> $LOG_FILE
-azure config mode arm >> $LOG_FILE
+azure login -u "$APPLICATION_ID" -p "$APPLICATION_PASSWORD" --service-principal --tenant "$TENANT" >> $LOG_FILE 2>&1
+azure config mode arm >> $LOG_FILE 2>&1
 
 hosts=`scontrol show hostnames $1`
 for host in $hosts
 do
    echo "Deallocating node $host" >> $LOG_FILE
-   azure vm deallocate --resource-group $RESOURCE_GROUP --name $host >> $LOG_FILE &
+   azure vm deallocate --resource-group $RESOURCE_GROUP --name $host >> $LOG_FILE 2>&1 &
 done
 
 failures=0
