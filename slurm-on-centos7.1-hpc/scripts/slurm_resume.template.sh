@@ -13,6 +13,8 @@ if [ -z "$1" ]; then
     exit 0
 fi
 
+export HOME=/home/slurm
+
 azure login -u "$APPLICATION_ID" -p "$APPLICATION_PASSWORD" --service-principal --tenant "$TENANT" >> $LOG_FILE 2>&1
 azure config mode arm >> $LOG_FILE 2>&1
 

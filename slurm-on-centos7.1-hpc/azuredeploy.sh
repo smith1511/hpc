@@ -226,7 +226,7 @@ install_slurm()
 {
     groupadd -g $SLURM_GID $SLURM_GROUP
 
-    useradd -M -u $SLURM_UID -c "SLURM service account" -g $SLURM_GROUP -d /tmp -s /usr/sbin/nologin $SLURM_USER
+    useradd -M -u $SLURM_UID -c "SLURM service account" -g $SLURM_GROUP -b /home -m -s /usr/sbin/nologin $SLURM_USER
 
     mkdir -p /etc/slurm /var/spool/slurmd /var/run/slurmd /var/run/slurmctld /var/log/slurmd /var/log/slurmctld
 
