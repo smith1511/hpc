@@ -197,7 +197,7 @@ install_slurm_config()
             sed 's/__MASTER__/'"$MASTER_HOSTNAME"'/g' |
                     sed 's/__WORKER_HOSTNAME_PREFIX__/'"$WORKER_HOSTNAME_PREFIX"'/g' |
                     sed 's/__LAST_WORKER_INDEX__/'"$LAST_WORKER_INDEX"'/g' |
-                    sed 's/__NODE_STATE__/CLOUD/g' |
+                    sed 's/__NODE_STATE__/UNKNOWN/g' |
                     sed 's/^SelectType=.*/SelectType=select\/linear/g' | 
                     sed 's/^SelectTypeParameters=.*/#SelectTypeParameters=/g' > $SLURM_CONF_DIR/slurm.conf
         else

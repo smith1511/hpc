@@ -20,9 +20,20 @@ hosts=`scontrol show hostnames $1`
 for host in $hosts
 do
    echo "Deallocating node $host" >> $LOG_FILE
-   azure vm deallocate --resource-group $RESOURCE_GROUP --name $host >> $LOG_FILE
-   exitCode=$?
-   echo "Command exited with $exitCode" >> $LOG_FILE
+   azure vm deallocate --resource-group $RESOURCE_GROUP --name $host >> $LOG_FILE &
 done
+
+failures=0
+
+for job in `jobs -p`
+do
+echo $job
+    wait $job || let "failures+=1"
+done
+
+if [ $failures -gt 0 ]; then
+    echo "Failures occurred stopping VMs: $failures"
+    exit 1
+fi
 
 exit 0
