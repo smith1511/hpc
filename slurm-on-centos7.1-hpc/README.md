@@ -1,4 +1,4 @@
-# Azure CentOS 7.1 HPC ARM Template
+# SLURM on CentOS 7.1 HPC ARM Template
 
 Deploys a SLURM cluster with head node and n worker nodes.
 
