@@ -342,7 +342,7 @@ install_beegfs()
         /etc/init.d/beegfs-meta start
     else
         yum install -y beegfs-storage
-        sed -i 's|^storeStorageDirectory.*|storeStorageDirectory = $BEEGFS_STORAGE|g' /etc/beegfs/beegfs-storage.conf
+        sed -i 's|^storeStorageDirectory.*|storeStorageDirectory = '$BEEGFS_STORAGE'|g' /etc/beegfs/beegfs-storage.conf
         sed -i 's/^sysMgmtdHost.*/sysMgmtdHost = '$MASTER_HOSTNAME'/g' /etc/beegfs/beegfs-storage.conf
         /etc/init.d/beegfs-storage start
     fi
