@@ -356,3 +356,5 @@ install_munge
 install_slurm
 setup_env
 install_easybuild
+reboot &
+exit 0
