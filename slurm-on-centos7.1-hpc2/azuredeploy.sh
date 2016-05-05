@@ -23,7 +23,8 @@ LAST_WORKER_INDEX=$(($WORKER_COUNT - 1))
 # Shares
 SHARE_HOME=/share/home
 SHARE_DATA=/share/data
-SHARE_SCRATCH=/cfs1
+SHARE_SCRATCH=/share/scratch
+BEEGFS_STORAGE=/data/beegfs/storage
 
 # Munged
 MUNGE_USER=munge
@@ -59,7 +60,7 @@ is_master()
 install_pkgs()
 {
     yum -y install epel-release
-    yum -y install zlib zlib-devel bzip2 bzip2-devel bzip2-libs openssl openssl-devel openssl-libs gcc gcc-c++ nfs-utils rpcbind mdadm wget python-pip
+    yum -y install zlib zlib-devel bzip2 bzip2-devel bzip2-libs openssl openssl-devel openssl-libs gcc gcc-c++ nfs-utils rpcbind mdadm wget python-pip kernel kernel-devel
 }
 
 # Partitions all data disks attached to the VM and creates
@@ -108,8 +109,9 @@ setup_shares()
     mkdir -p $SHARE_HOME
     mkdir -p $SHARE_DATA
     mkdir -p $SHARE_SCRATCH
+    mkdir -p $BEEGFS_STORAGE
 
-    setup_data_disks $SHARE_SCRATCH
+    setup_data_disks $BEEGFS_STORAGE
     
     if is_master; then
         echo "$SHARE_HOME    *(rw,async)" >> /etc/exports
@@ -318,9 +320,38 @@ install_easybuild()
     fi
 }
 
+install_beegfs()
+{    
+    wget -O beegfs-rhel7.repo http://www.beegfs.com/release/latest-stable/dists/beegfs-rhel7.repo
+    mv beegfs-rhel7.repo /etc/yum.repos.d/beegfs.repo
+    rpm --import http://www.beegfs.com/release/latest-stable/gpg/RPM-GPG-KEY-beegfs
+    
+    yum install -y beegfs-client beegfs-helperd beegfs-utils
+    
+    sed -i 's/^sysMgmtdHost.*/sysMgmtdHost = '$MASTER_HOSTNAME'/g' /etc/beegfs/beegfs-client.conf
+    echo "$SHARE_SCRATCH /etc/beegfs/beegfs-client.conf" > /etc/beegfs/beegfs-mounts.conf
+    
+    if is_master; then
+        yum install -y beegfs-mgmtd beegfs-meta
+        mkdir -p /data/beegfs/mgmtd
+        mkdir -p /data/beegfs/meta
+        sed -i 's|^storeMgmtdDirectory.*|storeMgmtdDirectory = /data/beegfs/mgmt|g' /etc/beegfs/beegfs-mgmtd.conf
+        sed -i 's|^storeMetaDirectory.*|storeMetaDirectory = /data/beegfs/meta|g' /etc/beegfs/beegfs-meta.conf
+        sed -i 's/^sysMgmtdHost.*/sysMgmtdHost = '$MASTER_HOSTNAME'/g' /etc/beegfs/beegfs-meta.conf
+        /etc/init.d/beegfs-mgmtd start
+        /etc/init.d/beegfs-meta start
+    else
+        yum install -y beegfs-storage
+        sed -i 's|^storeStorageDirectory.*|storeStorageDirectory = $BEEGFS_STORAGE|g' /etc/beegfs/beegfs-storage.conf
+        sed -i 's/^sysMgmtdHost.*/sysMgmtdHost = '$MASTER_HOSTNAME'/g' /etc/beegfs/beegfs-storage.conf
+        /etc/init.d/beegfs-storage start
+    fi
+}
+
 install_pkgs
 setup_shares
 setup_hpc_user
+install_beegfs
 install_munge
 install_slurm
 setup_env
