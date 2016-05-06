@@ -9,7 +9,7 @@ Type=forking
 EnvironmentFile=-/etc/sysconfig/slurm
 ExecStart=/sbin/slurmctld $SLURMCTLD_OPTIONS
 ExecReload=/bin/kill -HUP $MAINPID
-PIDFile=/var/run/slurmctld.pid
+PIDFile=/var/run/slurmctld/slurmctld.pid
 Restart=on-abort
 
 [Install]
