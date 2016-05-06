@@ -3,13 +3,13 @@
   "contentVersion": "1.0.0.0",
   "parameters": {
     "dnsPrefix": {
-      "value": "cbsbeegfstest1"
+      "value": ""
     },
     "adminUserName": {
       "value": "azureuser"
     },
     "adminPassword": {
-      "value": "Azureuser!23"
+      "value": ""
     },
     "hpcUserName": {
       "value": "hpc"
