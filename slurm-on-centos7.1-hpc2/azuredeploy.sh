@@ -25,6 +25,7 @@ SHARE_HOME=/share/home
 SHARE_DATA=/share/data
 SHARE_SCRATCH=/share/scratch
 BEEGFS_STORAGE=/data/beegfs/storage
+BEEGFS_METADATA=/data/beegfs/meta
 
 # Munged
 MUNGE_USER=munge
@@ -69,6 +70,7 @@ install_pkgs()
 setup_data_disks()
 {
     mountPoint="$1"
+    filesystem="$2"
     createdPartitions=""
 
     # Loop through and partition disks until not found
@@ -91,8 +93,8 @@ EOF
     if [ -n "$createdPartitions" ]; then
         devices=`echo $createdPartitions | wc -w`
         mdadm --create /dev/md10 --level 0 --raid-devices $devices $createdPartitions
-        mkfs -t ext4 /dev/md10
-        echo "/dev/md10 $mountPoint ext4 defaults,nofail 0 2" >> /etc/fstab
+        mkfs -t $filesystem /dev/md10
+        echo "/dev/md10 $mountPoint $filesystem defaults,nofail 0 2" >> /etc/fstab
         mount /dev/md10
     fi
 }
@@ -109,11 +111,11 @@ setup_shares()
     mkdir -p $SHARE_HOME
     mkdir -p $SHARE_DATA
     mkdir -p $SHARE_SCRATCH
-    mkdir -p $BEEGFS_STORAGE
 
-    setup_data_disks $BEEGFS_STORAGE
-    
     if is_master; then
+        mkdir -p $BEEGFS_METADATA
+        setup_data_disks $BEEGFS_METADATA "ext4"
+        
         echo "$SHARE_HOME    *(rw,async)" >> /etc/exports
         echo "$SHARE_DATA    *(rw,async)" >> /etc/exports
 
@@ -122,6 +124,8 @@ setup_shares()
         systemctl start rpcbind || echo "Already enabled"
         systemctl start nfs-server || echo "Already enabled"
     else
+        mkdir -p $BEEGFS_STORAGE
+        setup_data_disks $BEEGFS_STORAGE "ext4"
         echo "master:$SHARE_HOME $SHARE_HOME    nfs4    rw,auto,_netdev 0 0" >> /etc/fstab
         echo "master:$SHARE_DATA $SHARE_DATA    nfs4    rw,auto,_netdev 0 0" >> /etc/fstab
         mount -a
@@ -279,6 +283,8 @@ setup_hpc_user()
     else
         useradd -c "HPC User" -g $HPC_GROUP -d $SHARE_HOME/$HPC_USER -s /bin/bash -u $HPC_UID $HPC_USER
     fi
+    
+    chown $HPC_USER:$HPC_GROUP $SHARE_SCRATCH
 }
 
 # Sets all common environment variables and system parameters.
@@ -334,9 +340,8 @@ install_beegfs()
     if is_master; then
         yum install -y beegfs-mgmtd beegfs-meta
         mkdir -p /data/beegfs/mgmtd
-        mkdir -p /data/beegfs/meta
         sed -i 's|^storeMgmtdDirectory.*|storeMgmtdDirectory = /data/beegfs/mgmt|g' /etc/beegfs/beegfs-mgmtd.conf
-        sed -i 's|^storeMetaDirectory.*|storeMetaDirectory = /data/beegfs/meta|g' /etc/beegfs/beegfs-meta.conf
+        sed -i 's|^storeMetaDirectory.*|storeMetaDirectory = '$BEEGFS_METADATA'|g' /etc/beegfs/beegfs-meta.conf
         sed -i 's/^sysMgmtdHost.*/sysMgmtdHost = '$MASTER_HOSTNAME'/g' /etc/beegfs/beegfs-meta.conf
         /etc/init.d/beegfs-mgmtd start
         /etc/init.d/beegfs-meta start
@@ -346,6 +351,8 @@ install_beegfs()
         sed -i 's/^sysMgmtdHost.*/sysMgmtdHost = '$MASTER_HOSTNAME'/g' /etc/beegfs/beegfs-storage.conf
         /etc/init.d/beegfs-storage start
     fi
+    
+    systemctl enable beegfs-client.service
 }
 
 install_pkgs

@@ -296,6 +296,16 @@
               },
               "caching": "None",
               "createOption": "Empty"
+            },
+            {
+              "name": "datadisk1",
+              "diskSizeGB": "[parameters('dataDiskSize')]",
+              "lun": 1,
+              "vhd": {
+                "Uri":  "[concat('http://',variables('storageAccountName1'),'.blob.core.windows.net/',variables('vmStorageAccountContainerName'),'/',variables('masterVMName'),'-datadisk1.vhd')]"
+              },
+              "caching": "None",
+              "createOption": "Empty"
             }
           ]
         },
@@ -429,6 +439,16 @@
               "lun": 0,
               "vhd": {
                 "Uri": "[concat('http://',variables('storageAccountName1'),'.blob.core.windows.net/',variables('vmStorageAccountContainerName'),'/',variables('workerVMName'),copyindex(),'-datadisk0.vhd')]"
+              },
+              "caching": "None",
+              "createOption": "Empty"
+            },
+            {
+              "name": "datadisk1",
+              "diskSizeGB": "[parameters('dataDiskSize')]",
+              "lun": 1,
+              "vhd": {
+                "Uri": "[concat('http://',variables('storageAccountName1'),'.blob.core.windows.net/',variables('vmStorageAccountContainerName'),'/',variables('workerVMName'),copyindex(),'-datadisk1.vhd')]"
               },
               "caching": "None",
               "createOption": "Empty"
