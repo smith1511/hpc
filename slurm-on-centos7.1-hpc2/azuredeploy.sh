@@ -335,6 +335,7 @@ install_beegfs()
     yum install -y beegfs-client beegfs-helperd beegfs-utils
     
     sed -i 's/^sysMgmtdHost.*/sysMgmtdHost = '$MASTER_HOSTNAME'/g' /etc/beegfs/beegfs-client.conf
+    sed -i  's/Type=oneshot.*/Type=oneshot\nRestart=always\nRestartSec=5/g' /etc/systemd/system/multi-user.target.wants/beegfs-client.service
     echo "$SHARE_SCRATCH /etc/beegfs/beegfs-client.conf" > /etc/beegfs/beegfs-mounts.conf
     
     if is_master; then
@@ -351,8 +352,6 @@ install_beegfs()
         sed -i 's/^sysMgmtdHost.*/sysMgmtdHost = '$MASTER_HOSTNAME'/g' /etc/beegfs/beegfs-storage.conf
         /etc/init.d/beegfs-storage start
     fi
-    
-    systemctl enable beegfs-client.service
 }
 
 install_pkgs
