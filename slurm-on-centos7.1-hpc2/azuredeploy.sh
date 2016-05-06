@@ -227,9 +227,15 @@ install_slurm()
     install_slurm_config
 
     if is_master; then
-        /usr/sbin/slurmctld -vvvv
+        wget $TEMPLATE_BASE_URL/slurmctld.service
+        mv slurmctld.service /usr/lib/systemd/system
+        systemctl daemon-reload
+        systemctl enable slurmctld
     else
-        /usr/sbin/slurmd -vvvv
+        wget $TEMPLATE_BASE_URL/slurmd.service
+        mv slurmd.service /usr/lib/systemd/system
+        systemctl daemon-reload
+        systemctl enable slurmd
     fi
 
     cd ..
@@ -352,6 +358,8 @@ install_beegfs()
         sed -i 's/^sysMgmtdHost.*/sysMgmtdHost = '$MASTER_HOSTNAME'/g' /etc/beegfs/beegfs-storage.conf
         /etc/init.d/beegfs-storage start
     fi
+    
+    systemctl daemon-reload
 }
 
 install_pkgs
