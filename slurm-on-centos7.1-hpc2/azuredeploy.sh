@@ -364,15 +364,17 @@ install_beegfs()
 
 install_xor()
 {
-    cd $SHARE_HOME/$HPC_USER
-    mkdir IOR-2.10.3
-	cd IOR-2.10.3
-	wget http://www.nersc.gov/assets/Trinity--NERSC-8-RFP/Benchmarks/July12/IOR-July12.tar
-	tar xvf IOR-July12.tar
-	cd src/C
-	make mpiio
-	cd $SHARE_HOME/$HPC_USER
-	chown -R $HPC_USER:$HPC_GROUP IOR-2.10.3
+    if is_master; then
+        cd $SHARE_HOME/$HPC_USER
+        mkdir IOR-2.10.3
+	    cd IOR-2.10.3
+	    wget http://www.nersc.gov/assets/Trinity--NERSC-8-RFP/Benchmarks/July12/IOR-July12.tar
+	    tar xvf IOR-July12.tar
+	    cd src/C
+    	make mpiio
+    	cd $SHARE_HOME/$HPC_USER
+	    chown -R $HPC_USER:$HPC_GROUP IOR-2.10.3
+	fi
 }
 
 install_pkgs
