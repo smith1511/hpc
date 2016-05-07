@@ -93,8 +93,13 @@ EOF
     if [ -n "$createdPartitions" ]; then
         devices=`echo $createdPartitions | wc -w`
         mdadm --create /dev/md10 --level 0 --raid-devices $devices $createdPartitions
-        mkfs -t $filesystem /dev/md10
-        echo "/dev/md10 $mountPoint $filesystem defaults,nofail 0 2" >> /etc/fstab
+        if [ "$filesystem" == "xfs" ]; then
+            mkfs.xfs -d su=128k,sw=8 -l version=2,su=128k -isize=512 /dev/md10
+            echo "/dev/md10 $mountPoint $filesystem noatime,nodiratime,logbufs=8,logbsize=256k,largeio,inode64,swalloc,allocsize=131072k,nobarrier 0 2" >> /etc/fstab
+        else
+            mkfs -t $filesystem /dev/md10
+            echo "/dev/md10 $mountPoint $filesystem defaults,nofail 0 2" >> /etc/fstab
+        fi
         mount /dev/md10
     fi
 }
