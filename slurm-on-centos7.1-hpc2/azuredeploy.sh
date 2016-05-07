@@ -362,6 +362,19 @@ install_beegfs()
     systemctl daemon-reload
 }
 
+install_xor()
+{
+    cd $SHARE_HOME/$HPC_USER
+    mkdir IOR-2.10.3
+	cd IOR-2.10.3
+	wget http://www.nersc.gov/assets/Trinity--NERSC-8-RFP/Benchmarks/July12/IOR-July12.tar
+	tar xvf IOR-July12.tar
+	cd src/C
+	make mpiio
+	cd $SHARE_HOME/$HPC_USER
+	chown -R $HPC_USER:$HPC_GROUP IOR-2.10.3
+}
+
 install_pkgs
 setup_shares
 setup_hpc_user
@@ -370,5 +383,6 @@ install_munge
 install_slurm
 setup_env
 install_easybuild
+install_xor
 shutdown -r +1 &
 exit 0
