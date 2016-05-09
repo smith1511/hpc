@@ -22,6 +22,9 @@
     },
     "workerNodeCount": {
       "value": 2
+    },
+    "storageAccountType": {
+      "value": "Premium_LRS"
     }
   }
 }

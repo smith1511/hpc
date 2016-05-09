@@ -121,7 +121,18 @@
       "metadata": {
         "description": "The size in GB of each data disk that is attached to the VM.  A RAID-0 volume is created with all data disks that is dataDiskSize * dataDiskCount in size."
       }
-    }
+    },
+    "storageAccountType": {
+      "type": "string",
+      "defaultValue": "Standard_LRS",
+      "allowedValues": [
+        "Standard_LRS",
+        "Premium_LRS"
+      ],
+      "metadata": {
+        "description": "Type of storage account to create for disks."
+      }
+    },
   },
   "variables": {
     "imagePublisher": "OpenLogic",
@@ -162,8 +173,7 @@
     "vnetID": "[resourceId('Microsoft.Network/virtualNetworks',variables('networkSettings').virtualNetworkName)]",
     "subnetRef": "[concat(variables('vnetID'),'/subnets/',variables('networkSettings').subnet.dse.name)]",
     "templateBaseUrl": "https://raw.githubusercontent.com/smith1511/hpc/master/slurm-on-centos7.1-hpc2/",
-    "installationCLI": "[concat('bash azuredeploy.sh ', variables('masterVMName'), ' ', variables('workerVMName'), ' ', parameters('workerNodeCount'), ' ', parameters('hpcUserName'), ' ', variables('templateBaseUrl'))]",
-    "storageAccountType": "Premium_LRS"
+    "installationCLI": "[concat('bash azuredeploy.sh ', variables('masterVMName'), ' ', variables('workerVMName'), ' ', parameters('workerNodeCount'), ' ', parameters('hpcUserName'), ' ', variables('templateBaseUrl'))]"
   },
   "resources": [
     {
@@ -172,7 +182,7 @@
       "apiVersion": "2015-06-15",
       "location": "[resourceGroup().location]",
       "properties": {
-        "accountType": "Premium_LRS"
+        "accountType": "[parameters('storageAccountType')]"
       }
     },
     {
@@ -181,7 +191,7 @@
       "apiVersion": "2015-06-15",
       "location": "[resourceGroup().location]",
       "properties": {
-        "accountType": "Premium_LRS"
+        "accountType": "[parameters('storageAccountType')]"
       }
     },
     {
@@ -190,7 +200,7 @@
       "apiVersion": "2015-06-15",
       "location": "[resourceGroup().location]",
       "properties": {
-        "accountType": "Premium_LRS"
+        "accountType": "[parameters('storageAccountType')]"
       }
     },
     {
@@ -199,7 +209,7 @@
       "apiVersion": "2015-06-15",
       "location": "[resourceGroup().location]",
       "properties": {
-        "accountType": "Premium_LRS"
+        "accountType": "[parameters('storageAccountType')]"
       }
     },
     {
@@ -208,7 +218,7 @@
       "apiVersion": "2015-06-15",
       "location": "[resourceGroup().location]",
       "properties": {
-        "accountType": "Premium_LRS"
+        "accountType": "[parameters('storageAccountType')]"
       }
     },	
     {
