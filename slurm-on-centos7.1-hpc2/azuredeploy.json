@@ -136,7 +136,7 @@
   },
   "variables": {
     "imagePublisher": "OpenLogic",
-    "imageOffer": "CentOS-HPC",
+    "imageOffer": "CentOS",
     "imageSku": "7.1",
     "newStorageAccountName": "[concat(uniqueString(resourceGroup().id), 'sa')]",
     "storageAccountName1": "[concat(uniqueString('1', resourceGroup().id), 'sa')]",
