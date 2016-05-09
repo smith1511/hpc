@@ -441,6 +441,9 @@
       "dependsOn": [
         "[concat('Microsoft.Storage/storageAccounts/', variables('newStorageAccountName'))]",
         "[concat('Microsoft.Storage/storageAccounts/', variables('storageAccountName1'))]",
+		"[concat('Microsoft.Storage/storageAccounts/', variables('storageAccountName2'))]",
+		"[concat('Microsoft.Storage/storageAccounts/', variables('storageAccountName3'))]",
+		"[concat('Microsoft.Storage/storageAccounts/', variables('storageAccountName4'))]",
         "[concat('Microsoft.Network/networkInterfaces/', variables('nicName'), 'worker', copyindex())]",
 		"[concat('Microsoft.Compute/availabilitySets/', variables('avSetName'))]"
       ],
