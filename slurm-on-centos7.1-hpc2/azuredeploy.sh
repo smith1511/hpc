@@ -8,8 +8,8 @@ if [[ $(id -u) -ne 0 ]] ; then
     exit 1
 fi
 
-if [ $# != 5 ]; then
-    echo "Usage: $0 <MasterHostname> <WorkerHostnamePrefix> <WorkerNodeCount> <HPCUserName> <TemplateBaseUrl>"
+if [ $# != 6 ]; then
+    echo "Usage: $0 <MasterHostname> <WorkerHostnamePrefix> <WorkerNodeCount> <HPCUserName> <TemplateBaseUrl> <BeeGFSStoragePath>"
     exit 1
 fi
 
@@ -18,13 +18,13 @@ MASTER_HOSTNAME=$1
 WORKER_HOSTNAME_PREFIX=$2
 WORKER_COUNT=$3
 TEMPLATE_BASE_URL="$5"
+BEEGFS_STORAGE="$6"
 LAST_WORKER_INDEX=$(($WORKER_COUNT - 1))
 
 # Shares
 SHARE_HOME=/share/home
 SHARE_DATA=/share/data
 SHARE_SCRATCH=/share/scratch
-BEEGFS_STORAGE=/data/beegfs/storage
 BEEGFS_METADATA=/data/beegfs/meta
 
 # Munged
@@ -95,7 +95,7 @@ EOF
         mdadm --create /dev/md10 --level 0 --raid-devices $devices $createdPartitions
         if [ "$filesystem" == "xfs" ]; then
             mkfs -t $filesystem /dev/md10
-            echo "/dev/md10 $mountPoint $filesystem defaults,nofail 0 2" >> /etc/fstab
+            echo "/dev/md10 $mountPoint $filesystem rw,noatime,attr2,inode64,nobarrier,sunit=1024,swidth=4096,nofail 0 2" >> /etc/fstab
         else
             mkfs -t $filesystem /dev/md10
             echo "/dev/md10 $mountPoint $filesystem defaults,nofail 0 2" >> /etc/fstab
@@ -382,6 +382,16 @@ install_xor()
 	fi
 }
 
+setup_swap()
+{
+    fallocate -l 5g /mnt/resource/swap
+	chmod 600 /mnt/resource/swap
+	mkswap /mnt/resource/swap
+	swapon /mnt/resource/swap
+	echo “/mnt/resource/swap   none  swap  sw  0 0” >> /etc/fstab
+}
+
+setup_swap
 install_pkgs
 setup_shares
 setup_hpc_user

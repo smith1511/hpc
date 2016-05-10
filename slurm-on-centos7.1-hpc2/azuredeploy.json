@@ -148,6 +148,17 @@
         "description": "Type of storage account to create for disks."
       }
     },
+    "clusterFilesystemLocation": {
+      "type": "string",
+      "defaultValue": "/data/beegfs/storage",
+      "allowedValues": [
+        "/data/beegfs/storage",
+        "/mnt/resource/storage"
+      ],
+      "metadata": {
+        "description": "Path to use for BeeGFS storage."
+      }
+    },
   },
   "variables": {
     "imagePublisher": "OpenLogic",
@@ -188,7 +199,7 @@
     "vnetID": "[resourceId('Microsoft.Network/virtualNetworks',variables('networkSettings').virtualNetworkName)]",
     "subnetRef": "[concat(variables('vnetID'),'/subnets/',variables('networkSettings').subnet.dse.name)]",
     "templateBaseUrl": "https://raw.githubusercontent.com/smith1511/hpc/master/slurm-on-centos7.1-hpc2/",
-    "installationCLI": "[concat('bash azuredeploy.sh ', variables('masterVMName'), ' ', variables('workerVMName'), ' ', parameters('workerNodeCount'), ' ', parameters('hpcUserName'), ' ', variables('templateBaseUrl'))]"
+    "installationCLI": "[concat('bash azuredeploy.sh ', variables('masterVMName'), ' ', variables('workerVMName'), ' ', parameters('workerNodeCount'), ' ', parameters('hpcUserName'), ' ', variables('templateBaseUrl'), ' ', parameters('clusterFilesystemLocation'))]"
   },
   "resources": [
     {
