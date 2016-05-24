@@ -26,6 +26,7 @@ SHARE_HOME=/share/home
 SHARE_DATA=/share/data
 SHARE_SCRATCH=/share/scratch
 BEEGFS_METADATA=/data/beegfs/meta
+LOCAL_SCRATCH=/mnt/resource/scratch
 
 # Munged
 MUNGE_USER=munge
@@ -71,10 +72,16 @@ setup_data_disks()
 {
     mountPoint="$1"
     filesystem="$2"
+    devices="$3"
+    
     createdPartitions=""
+    
+    if [ -z "$devices" ]; then
+        devices="sdc sdd sde sdf sdg sdh sdi sdj sdk sdl sdm sdn sdo sdp sdq sdr"
+    fi
 
     # Loop through and partition disks until not found
-    for disk in sdc sdd sde sdf sdg sdh sdi sdj sdk sdl sdm sdn sdo sdp sdq sdr; do
+    for disk in $devices; do
         fdisk -l /dev/$disk || break
         fdisk /dev/$disk << EOF
 n
@@ -120,10 +127,14 @@ setup_shares()
     mkdir -p $SHARE_HOME
     mkdir -p $SHARE_DATA
     mkdir -p $SHARE_SCRATCH
+    mkdir -p $LOCAL_SCRATCH
 
     if is_master; then
         mkdir -p $BEEGFS_METADATA
-        setup_data_disks $BEEGFS_METADATA "ext4"
+        
+        setup_data_disks $SHARE_HOME "ext4" "sdc sdd sde sdf"
+        setup_data_disks $BEEGFS_METADATA "ext4" "sdg sdh"
+        setup_data_disks $BEEGFS_STORAGE "xfs" "sdi sdj sdk sdl sdm sdn sdo sdp sdq sdr"
         
         echo "$SHARE_HOME    *(rw,async)" >> /etc/exports
         echo "$SHARE_DATA    *(rw,async)" >> /etc/exports
@@ -299,6 +310,7 @@ setup_hpc_user()
     fi
     
     chown $HPC_USER:$HPC_GROUP $SHARE_SCRATCH
+    chown $HPC_USER:$HPC_GROUP $LOCAL_SCRATCH
 }
 
 # Sets all common environment variables and system parameters.
@@ -336,13 +348,13 @@ install_beegfs()
         sed -i 's/^sysMgmtdHost.*/sysMgmtdHost = '$MASTER_HOSTNAME'/g' /etc/beegfs/beegfs-meta.conf
         /etc/init.d/beegfs-mgmtd start
         /etc/init.d/beegfs-meta start
-    else
-        if [ -d $BEEGFS_STORAGE ]; then
-            yum install -y beegfs-storage
-            sed -i 's|^storeStorageDirectory.*|storeStorageDirectory = '$BEEGFS_STORAGE'|g' /etc/beegfs/beegfs-storage.conf
-            sed -i 's/^sysMgmtdHost.*/sysMgmtdHost = '$MASTER_HOSTNAME'/g' /etc/beegfs/beegfs-storage.conf
-            /etc/init.d/beegfs-storage start
-        fi
+    fi
+    
+    if [ -d $BEEGFS_STORAGE ]; then
+        yum install -y beegfs-storage
+        sed -i 's|^storeStorageDirectory.*|storeStorageDirectory = '$BEEGFS_STORAGE'|g' /etc/beegfs/beegfs-storage.conf
+        sed -i 's/^sysMgmtdHost.*/sysMgmtdHost = '$MASTER_HOSTNAME'/g' /etc/beegfs/beegfs-storage.conf
+        /etc/init.d/beegfs-storage start
     fi
     
     systemctl daemon-reload
@@ -354,7 +366,7 @@ setup_swap()
 	chmod 600 /mnt/resource/swap
 	mkswap /mnt/resource/swap
 	swapon /mnt/resource/swap
-	echo “/mnt/resource/swap   none  swap  sw  0 0” >> /etc/fstab
+	echo "/mnt/resource/swap   none  swap  sw  0 0" >> /etc/fstab
 }
 
 setup_swap
