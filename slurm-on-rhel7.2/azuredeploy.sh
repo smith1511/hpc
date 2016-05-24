@@ -73,6 +73,7 @@ setup_data_disks()
     mountPoint="$1"
     filesystem="$2"
     devices="$3"
+    raidDevice="$4"
     
     createdPartitions=""
     
@@ -103,15 +104,15 @@ EOF
         fi
 
         devices=`echo $createdPartitions | wc -w`
-        mdadm --create /dev/md10 --level 0 --raid-devices $devices $createdPartitions
+        mdadm --create $raidDevice --level 0 --raid-devices $devices $createdPartitions
         if [ "$filesystem" == "xfs" ]; then
-            mkfs -t $filesystem /dev/md10
-            echo "/dev/md10 $mountPoint $filesystem rw,noatime,attr2,inode64,nobarrier,sunit=1024,swidth=4096,nofail 0 2" >> /etc/fstab
+            mkfs -t $filesystem $raidDevice
+            echo "$raidDevice $mountPoint $filesystem rw,noatime,attr2,inode64,nobarrier,sunit=1024,swidth=4096,nofail 0 2" >> /etc/fstab
         else
-            mkfs -t $filesystem /dev/md10
-            echo "/dev/md10 $mountPoint $filesystem defaults,nofail 0 2" >> /etc/fstab
+            mkfs -t $filesystem $raidDevice
+            echo "$raidDevice $mountPoint $filesystem defaults,nofail 0 2" >> /etc/fstab
         fi
-        mount /dev/md10
+        mount $raidDevice
     fi
 }
 
@@ -132,9 +133,9 @@ setup_shares()
     if is_master; then
         mkdir -p $BEEGFS_METADATA
         
-        setup_data_disks $SHARE_HOME "ext4" "sdc sdd sde sdf"
-        setup_data_disks $BEEGFS_METADATA "ext4" "sdg sdh"
-        setup_data_disks $BEEGFS_STORAGE "xfs" "sdi sdj sdk sdl sdm sdn sdo sdp sdq sdr"
+        setup_data_disks $SHARE_HOME "ext4" "sdc sdd sde sdf" "/dev/md10"
+        setup_data_disks $BEEGFS_METADATA "ext4" "sdg sdh" "/dev/md20"
+        setup_data_disks $BEEGFS_STORAGE "xfs" "sdi sdj sdk sdl sdm sdn sdo sdp sdq sdr" "/dev/md30"
         
         echo "$SHARE_HOME    *(rw,async)" >> /etc/exports
         echo "$SHARE_DATA    *(rw,async)" >> /etc/exports
@@ -144,7 +145,7 @@ setup_shares()
         systemctl start rpcbind || echo "Already enabled"
         systemctl start nfs-server || echo "Already enabled"
     else
-        setup_data_disks $BEEGFS_STORAGE "xfs"
+        setup_data_disks $BEEGFS_STORAGE "xfs" "/dev/md10"
         echo "master:$SHARE_HOME $SHARE_HOME    nfs4    rw,auto,_netdev 0 0" >> /etc/fstab
         echo "master:$SHARE_DATA $SHARE_DATA    nfs4    rw,auto,_netdev 0 0" >> /etc/fstab
         mount -a

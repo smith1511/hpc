@@ -253,7 +253,7 @@
 	"armApiVersion": "2015-06-15",
 	"avSetName": "avSet",
     "nicName": "nic",
-    "cfsNodes": 3,
+    "cfsNodes": 2,
     "networkSettings": {
       "virtualNetworkName": "virtualnetwork",
       "addressPrefix": "10.0.0.0/16",
