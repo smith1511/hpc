@@ -62,7 +62,9 @@ is_master()
 install_pkgs()
 {
     yum -y install epel-release
-    yum -y install zlib zlib-devel bzip2 bzip2-devel bzip2-libs openssl openssl-devel openssl-libs gcc gcc-c++ nfs-utils rpcbind mdadm wget python-pip kernel kernel-devel openmpi openmpi-devel automake autoconf
+    yum -y install zlib zlib-devel bzip2 bzip2-devel bzip2-libs openssl openssl-devel openssl-libs gcc gcc-c++ nfs-utils rpcbind mdadm wget python-pip kernel kernel-devel automake autoconf
+    systemctl stop firewalld
+    systemctl disable firewalld
 }
 
 # Partitions all data disks attached to the VM and creates
@@ -145,7 +147,7 @@ setup_shares()
         systemctl start rpcbind || echo "Already enabled"
         systemctl start nfs-server || echo "Already enabled"
     else
-        setup_data_disks $BEEGFS_STORAGE "xfs" "/dev/md10"
+        setup_data_disks $BEEGFS_STORAGE "xfs" "sdc sdd sde sdf sdg sdh sdi sdj sdk sdl sdm sdn" "/dev/md10"
         echo "master:$SHARE_HOME $SHARE_HOME    nfs4    rw,auto,_netdev 0 0" >> /etc/fstab
         echo "master:$SHARE_DATA $SHARE_DATA    nfs4    rw,auto,_netdev 0 0" >> /etc/fstab
         mount -a
