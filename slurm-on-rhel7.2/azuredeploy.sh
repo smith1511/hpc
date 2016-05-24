@@ -363,16 +363,6 @@ install_beegfs()
     systemctl daemon-reload
 }
 
-setup_swap()
-{
-    fallocate -l 5g /mnt/resource/swap
-	chmod 600 /mnt/resource/swap
-	mkswap /mnt/resource/swap
-	swapon /mnt/resource/swap
-	echo "/mnt/resource/swap   none  swap  sw  0 0" >> /etc/fstab
-}
-
-setup_swap
 install_pkgs
 setup_shares
 setup_hpc_user
