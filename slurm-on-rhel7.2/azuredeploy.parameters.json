@@ -15,16 +15,22 @@
       "value": "hpc"
     },
     "headNodeSize": {
-      "value": "Standard_DS14"
+      "value": "Standard_D5_v2"
     },
     "workerNodeSize": {
-      "value": "Standard_DS14"
+      "value": "Standard_D5_v2"
     },
     "workerNodeCount": {
-      "value": 2
+      "value": 16
+    },
+    "hiMemNodeSize": {
+      "value": "Standard_G5"
+    },
+    "hiMemNodeCount": {
+      "value": 4
     },
     "storageAccountType": {
-      "value": "Premium_LRS"
+      "value": "Standard_LRS"
     }
   }
 }
