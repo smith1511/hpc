@@ -229,7 +229,14 @@
       "metadata": {
         "description": "Path to use for BeeGFS storage."
       }
-    }
+    },
+    "clusterFilesystemNodes": {
+      "type": "int",
+      "defaultValue": 3,
+      "metadata": {
+        "description": "The number of storage nodes to use in the cluster file system.  This value cannot exceed the number of worker nodes."
+      }
+    },
   },
   "variables": {
     "imagePublisher": "RedHat",
@@ -253,7 +260,7 @@
 	"armApiVersion": "2015-06-15",
 	"avSetName": "avSet",
     "nicName": "nic",
-    "cfsNodes": 2,
+    "cfsNodes": "[parameters('clusterFilesystemNodes')]",
     "networkSettings": {
       "virtualNetworkName": "virtualnetwork",
       "addressPrefix": "10.0.0.0/16",
