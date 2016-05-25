@@ -236,7 +236,7 @@
       "metadata": {
         "description": "The number of storage nodes to use in the cluster file system.  This value cannot exceed the number of worker nodes."
       }
-    },
+    }
   },
   "variables": {
     "imagePublisher": "RedHat",
@@ -260,7 +260,6 @@
 	"armApiVersion": "2015-06-15",
 	"avSetName": "avSet",
     "nicName": "nic",
-    "cfsNodes": "[parameters('clusterFilesystemNodes')]",
     "networkSettings": {
       "virtualNetworkName": "virtualnetwork",
       "addressPrefix": "10.0.0.0/16",
@@ -690,7 +689,7 @@
       ],
       "copy": {
         "name": "foo",
-        "count": "[variables('cfsNodes')]"
+        "count": "[parameters('clusterFilesystemNodes')]"
       },
       "properties": {
         "availabilitySet": {
@@ -774,16 +773,16 @@
     {
       "apiVersion": "[variables('armApiVersion')]",
       "type": "Microsoft.Compute/virtualMachines",
-      "name": "[concat(variables('workerVMName'), copyindex(variables('cfsNodes')))]",
+      "name": "[concat(variables('workerVMName'), copyindex(parameters('clusterFilesystemNodes')))]",
       "location": "[resourceGroup().location]",
       "dependsOn": [
         "[concat('Microsoft.Storage/storageAccounts/', variables('osDiskStorageAccountName2'))]",
-        "[concat('Microsoft.Network/networkInterfaces/', variables('nicName'), 'worker', copyindex(variables('cfsNodes')))]",
+        "[concat('Microsoft.Network/networkInterfaces/', variables('nicName'), 'worker', copyindex(parameters('clusterFilesystemNodes')))]",
 		"[concat('Microsoft.Compute/availabilitySets/', variables('avSetName'))]"
       ],
       "copy": {
         "name": "foo",
-        "count": "[sub(parameters('workerNodeCount'), variables('cfsNodes'))]"
+        "count": "[sub(parameters('workerNodeCount'), parameters('clusterFilesystemNodes'))]"
       },
       "properties": {
         "availabilitySet": {
@@ -793,7 +792,7 @@
           "vmSize": "[parameters('workerNodeSize')]"
         },
         "osProfile": {
-          "computername": "[concat(variables('workerVMName'), copyindex(variables('cfsNodes')))]",
+          "computername": "[concat(variables('workerVMName'), copyindex(parameters('clusterFilesystemNodes')))]",
           "adminUsername": "[parameters('adminUsername')]",
           "adminPassword": "[parameters('adminPassword')]"
         },
@@ -807,7 +806,7 @@
           "osDisk": {
             "name": "osdisk",
             "vhd": {
-              "uri": "[concat('http://',variables('osDiskStorageAccountName2'),'.blob.core.windows.net/',variables('vmStorageAccountContainerName'),'/',variables('OSDiskName'),variables('workerVMName'),copyindex(variables('cfsNodes')),'.vhd')]"
+              "uri": "[concat('http://',variables('osDiskStorageAccountName2'),'.blob.core.windows.net/',variables('vmStorageAccountContainerName'),'/',variables('OSDiskName'),variables('workerVMName'),copyindex(parameters('clusterFilesystemNodes')),'.vhd')]"
             },
             "caching": "ReadWrite",
             "createOption": "FromImage"
@@ -816,7 +815,7 @@
         "networkProfile": {
           "networkInterfaces": [
             {
-              "id": "[resourceId('Microsoft.Network/networkInterfaces',concat(variables('nicName'), 'worker', copyindex(variables('cfsNodes'))))]"
+              "id": "[resourceId('Microsoft.Network/networkInterfaces',concat(variables('nicName'), 'worker', copyindex(parameters('clusterFilesystemNodes'))))]"
             }
           ]
         }
