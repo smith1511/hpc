@@ -62,7 +62,7 @@ is_master()
 install_pkgs()
 {
     yum -y install epel-release
-    yum -y install zlib zlib-devel bzip2 bzip2-devel bzip2-libs openssl openssl-devel openssl-libs gcc gcc-c++ nfs-utils rpcbind mdadm wget python-pip kernel kernel-devel automake autoconf
+    yum -y install zlib zlib-devel bzip2 bzip2-devel bzip2-libs openssl openssl-devel openssl-libs gcc gcc-c++ nfs-utils rpcbind mdadm wget python-pip kernel kernel-devel automake autoconf openmpi openmpi-devel
     systemctl stop firewalld
     systemctl disable firewalld
 }
@@ -361,6 +361,22 @@ install_beegfs()
     fi
         
     systemctl daemon-reload
+}
+
+install_xor()
+{
+    echo 'export PATH=/usr/lib64/openmpi/bin:$PATH' >> $SHARE_HOME/$HPC_USER/.bashrc
+    if is_master; then
+        cd $SHARE_HOME/$HPC_USER
+        mkdir IOR-2.10.3
+	    cd IOR-2.10.3
+	    wget http://www.nersc.gov/assets/Trinity--NERSC-8-RFP/Benchmarks/July12/IOR-July12.tar
+	    tar xvf IOR-July12.tar
+	    cd src/C
+    	make mpiio
+    	cd $SHARE_HOME/$HPC_USER
+	    chown -R $HPC_USER:$HPC_GROUP IOR-2.10.3
+	fi
 }
 
 install_pkgs
