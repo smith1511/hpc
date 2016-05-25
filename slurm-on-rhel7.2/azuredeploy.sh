@@ -363,7 +363,7 @@ install_beegfs()
     systemctl daemon-reload
 }
 
-install_xor()
+install_ior()
 {
     echo 'export PATH=/usr/lib64/openmpi/bin:$PATH' >> $SHARE_HOME/$HPC_USER/.bashrc
     if is_master; then
@@ -386,5 +386,6 @@ install_beegfs
 install_munge
 install_slurm
 setup_env
+install_ior
 shutdown -r +1 &
 exit 0
