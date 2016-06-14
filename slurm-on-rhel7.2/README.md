@@ -1,8 +1,14 @@
-# SLURM on CentOS 7.1 HPC ARM Template
+# SLURM on Red Hat 7.2 ARM Template
 
 Deploys a SLURM cluster with head node and n worker nodes.
 
+Deploy Primary Cluster
 <a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fsmith1511%2Fhpc%2Fmaster%2Fslurm-on-rhel7.2%2Fazuredeploy.json" target="_blank">
+   <img alt="Deploy to Azure" src="http://azuredeploy.net/deploybutton.png"/>
+</a>
+
+Deploy High-Mem Instances
+<a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fsmith1511%2Fhpc%2Fmaster%2Fslurm-on-rhel7.2%2Fazuredeploy-highmem.json" target="_blank">
    <img alt="Deploy to Azure" src="http://azuredeploy.net/deploybutton.png"/>
 </a>
 
@@ -18,10 +24,10 @@ Deploys a SLURM cluster with head node and n worker nodes.
 
 ## Accessing the cluster
 
-Simply SSH to the master node using the DNS name _**dnsName**_._**location**_.cloudapp.azure.com, for example, centos71-hpc.westus.cloudapp.azure.com.
+Simply SSH to the master node using the DNS name _**dnsName**_._**location**_.cloudapp.azure.com, for example, rhel72-hpc.westus.cloudapp.azure.com.
 
 ```
-# ssh azureuser@centos71-hpc.westus.cloudapp.azure.com
+# ssh azureuser@rhel72-hpc.westus.cloudapp.azure.com
 ```
 
 You can log into the head node using the admin user and password specified.  Once on the head node you can switch to the HPC user.  For security reasons the HPC user cannot login to the head node directly.
@@ -76,9 +82,3 @@ The master/head node only supports VM sizes that support up to 16 disks being at
 #### Worker Nodes
 
 Worker nodes support any VM size.
-
-### MPI
-
-To run MPI applications you'll need to use the A8/A9 instances which include InfiniBand and RDMA support.  We suggest using A8 for the head node and A9 instances for worker nodes.
-
-Currently RDMA only supports Intel MPI.  You can download the Intel pieces and get an evaluation license from https://software.intel.com/en-us/intel-mpi-library.
