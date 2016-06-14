@@ -30,7 +30,7 @@
     },
     "headNodeSize": {
       "type": "string",
-      "defaultValue": "Standard_DS5_v2",
+      "defaultValue": "Standard_D5_v2",
       "allowedValues": [
         "Standard_A4",
         "Standard_A7",
@@ -81,7 +81,7 @@
     },
     "workerNodeSize": {
       "type": "string",
-      "defaultValue": "Standard_DS5_v2",
+      "defaultValue": "Standard_D5_v2",
       "allowedValues": [
         "Standard_A1",
         "Standard_A2",
@@ -142,7 +142,7 @@
     },
     "hiMemNodeSize": {
       "type": "string",
-      "defaultValue": "Standard_GS5",
+      "defaultValue": "Standard_G5",
       "allowedValues": [
         "Standard_A1",
         "Standard_A2",
@@ -210,7 +210,7 @@
     },
     "storageAccountType": {
       "type": "string",
-      "defaultValue": "Premium_LRS",
+      "defaultValue": "Standard_LRS",
       "allowedValues": [
         "Standard_LRS",
         "Premium_LRS"
