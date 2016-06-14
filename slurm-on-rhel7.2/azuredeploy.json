@@ -194,13 +194,6 @@
         "description": "Size of the hi memory worker nodes."
       }
     },
-    "hiMemNodeCount": {
-      "type": "int",
-      "defaultValue": 4,
-      "metadata": {
-        "description": "This template creates N worker node. Use workerNodeCount to specify that N."
-      }
-    },
     "dataDiskSize": {
       "type": "int",
       "defaultValue": 128,
@@ -623,58 +616,6 @@
     },
     {
       "apiVersion": "[variables('armApiVersion')]",
-      "type": "Microsoft.Compute/virtualMachines/extensions",
-      "name": "[concat(variables('hiMemVMName'), copyindex(), '/Installation')]",
-      "location": "[resourceGroup().location]",
-      "dependsOn": [
-	    "[concat('Microsoft.Compute/virtualMachines/', variables('masterVMName'),'/extensions/Installation')]",
-        "[concat('Microsoft.Compute/virtualMachines/', variables('hiMemVMName'), copyindex())]"
-      ],
-      "copy": {
-        "name": "foo",
-        "count": "[parameters('hiMemNodeCount')]"
-      },
-      "properties": {
-        "publisher": "Microsoft.OSTCExtensions",
-        "type": "CustomScriptForLinux",
-        "typeHandlerVersion": "1.3",
-        "settings": {
-          "fileUris": [
-            "[concat(variables('templateBaseUrl'), 'azuredeploy.sh')]"
-          ],
-          "commandToExecute": "[variables('installationCLI')]"
-        }
-      }
-    },
-    {
-      "apiVersion": "[variables('armApiVersion')]",
-      "type": "Microsoft.Network/networkInterfaces",
-      "name": "[concat(variables('nicName'), 'worker', copyindex())]",
-      "location": "[resourceGroup().location]",
-      "dependsOn": [
-        "[concat('Microsoft.Network/virtualNetworks/', variables('networkSettings').virtualNetworkName)]"
-      ],
-      "copy": {
-        "name": "foo",
-        "count": "[add(parameters('workerNodeCount'), parameters('hiMemNodeCount'))]"
-      },
-      "properties": {
-        "ipConfigurations": [
-          {
-            "name": "ipconfig1",
-            "properties": {
-              "privateIPAllocationMethod": "Static",
-              "privateIPAddress": "[concat(variables('networkSettings').statics.workerRange.base, copyindex(variables('networkSettings').statics.workerRange.start))]",
-              "subnet": {
-                "id": "[variables('subnetRef')]"
-              }
-            }
-          }
-        ]
-      }
-    },
-    {
-      "apiVersion": "[variables('armApiVersion')]",
       "type": "Microsoft.Compute/virtualMachines",
       "name": "[concat(variables('workerVMName'), copyindex())]",
       "location": "[resourceGroup().location]",
@@ -816,57 +757,6 @@
           "networkInterfaces": [
             {
               "id": "[resourceId('Microsoft.Network/networkInterfaces',concat(variables('nicName'), 'worker', copyindex(parameters('clusterFilesystemNodes'))))]"
-            }
-          ]
-        }
-      }
-    },
-    {
-      "apiVersion": "[variables('armApiVersion')]",
-      "type": "Microsoft.Compute/virtualMachines",
-      "name": "[concat(variables('hiMemVMName'), copyindex())]",
-      "location": "[resourceGroup().location]",
-      "dependsOn": [
-        "[concat('Microsoft.Storage/storageAccounts/', variables('osDiskStorageAccountName3'))]",
-        "[concat('Microsoft.Network/networkInterfaces/', variables('nicName'), 'worker', copyindex(parameters('workerNodeCount')))]",
-		"[concat('Microsoft.Compute/availabilitySets/', variables('avSetName'))]"
-      ],
-      "copy": {
-        "name": "foo",
-        "count": "[parameters('hiMemNodeCount')]"
-      },
-      "properties": {
-        "availabilitySet": {
-          "id": "[resourceId('Microsoft.Compute/availabilitySets', variables('avSetName'))]"
-        },
-        "hardwareProfile": {
-          "vmSize": "[parameters('hiMemNodeSize')]"
-        },
-        "osProfile": {
-          "computername": "[concat(variables('hiMemVMName'), copyindex())]",
-          "adminUsername": "[parameters('adminUsername')]",
-          "adminPassword": "[parameters('adminPassword')]"
-        },
-        "storageProfile": {
-          "imageReference": {
-            "publisher": "[variables('imagePublisher')]",
-            "offer": "[variables('imageOffer')]",
-            "sku": "[variables('imageSku')]",
-            "version": "latest"
-          },
-          "osDisk": {
-            "name": "osdisk",
-            "vhd": {
-              "uri": "[concat('http://',variables('osDiskStorageAccountName3'),'.blob.core.windows.net/',variables('vmStorageAccountContainerName'),'/',variables('OSDiskName'),variables('hiMemVMName'),copyindex(),'.vhd')]"
-            },
-            "caching": "ReadWrite",
-            "createOption": "FromImage"
-          }
-        },
-        "networkProfile": {
-          "networkInterfaces": [
-            {
-              "id": "[resourceId('Microsoft.Network/networkInterfaces',concat(variables('nicName'), 'worker', copyindex(parameters('workerNodeCount'))))]"
             }
           ]
         }

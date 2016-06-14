@@ -2,9 +2,6 @@
   "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
   "contentVersion": "1.0.0.0",
   "parameters": {
-    "dnsPrefix": {
-      "value": ""
-    },
     "adminUserName": {
       "value": "azureuser"
     },
@@ -14,14 +11,8 @@
     "hpcUserName": {
       "value": "hpc"
     },
-    "headNodeSize": {
-      "value": "Standard_D5_v2"
-    },
-    "workerNodeSize": {
-      "value": "Standard_D4_v2"
-    },
     "workerNodeCount": {
-      "value": 4
+      "value": 6
     },
     "hiMemNodeSize": {
       "value": "Standard_G5"
@@ -32,11 +23,8 @@
     "storageAccountType": {
       "value": "Standard_LRS"
     },
-    "clusterFilesystemNodes": {
-      "value": 3
-    },
-    "dataDiskSize": {
-      "value": 128
+    "primaryClusterResourceGroup": {
+      "value": ""
     }
   }
 }
