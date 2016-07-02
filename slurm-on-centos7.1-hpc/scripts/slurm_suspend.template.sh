@@ -6,6 +6,10 @@ TENANT=__TENANT_ID__
 RESOURCE_GROUP=__RESOURCE_GROUP__
 LOG_FILE=/var/log/slurmctld/power_save.log
 
+# disable the script for now so Slurm doesn't 
+# stop the nodes while they're being provisioned.
+exit 0
+
 echo "`date` Suspend invoked $0 $*" >> $LOG_FILE
 
 if [ -z "$1" ]; then
