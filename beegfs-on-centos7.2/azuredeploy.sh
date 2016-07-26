@@ -127,7 +127,6 @@ install_beegfs()
         sed -i 's|^storeMgmtdDirectory.*|storeMgmtdDirectory = /data/beegfs/mgmt|g' /etc/beegfs/beegfs-mgmtd.conf
         systemctl daemon-reload
         systemctl enable beegfs-mgmtd.service
-        systemctl start beegfs-mgmtd.service
         
         # setup client
         sed -i 's/^sysMgmtdHost.*/sysMgmtdHost = '$MGMT_HOSTNAME'/g' /etc/beegfs/beegfs-client.conf
@@ -144,8 +143,8 @@ install_beegfs()
         sed -i 's/^sysMgmtdHost.*/sysMgmtdHost = '$MGMT_HOSTNAME'/g' /etc/beegfs/beegfs-meta.conf
         systemctl daemon-reload
         systemctl enable beegfs-meta.service
-        systemctl start beegfs-meta.service
         
+        # See http://www.beegfs.com/wiki/MetaServerTuning#xattr
         echo deadline > /sys/block/sdX/queue/scheduler
     fi
     
@@ -155,7 +154,6 @@ install_beegfs()
         sed -i 's/^sysMgmtdHost.*/sysMgmtdHost = '$MGMT_HOSTNAME'/g' /etc/beegfs/beegfs-storage.conf
         systemctl daemon-reload
         systemctl enable beegfs-storage.service
-        systemctl start beegfs-storage.service
     fi
 }
 
