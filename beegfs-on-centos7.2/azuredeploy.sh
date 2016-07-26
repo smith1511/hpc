@@ -19,17 +19,29 @@ METADATA_COUNT=$2
 STORAGE_HOSTNAME_PREFIX=$3
 STORAGE_COUNT=$4
 TEMPLATE_BASE_URL="$5"
+# Use the first metadata server for management server
+MGMT_HOSTNAME=${METADATA_HOSTNAME_PREFIX}0
 
 # Shares
 SHARE_SCRATCH=/share/scratch
 BEEGFS_METADATA=/data/beegfs/meta
 BEEGFS_STORAGE=/data/beegfs/storage
 
-# Returns 0 if this node is a metadata node.
-#
-is_metadata()
+is_mgmtnode()
+{
+    hostname | grep "${METADATA_HOSTNAME_PREFIX}0"
+    return $?
+}
+
+is_metadatanode()
 {
     hostname | grep "$METADATA_HOSTNAME_PREFIX"
+    return $?
+}
+
+is_storagenode()
+{
+    hostname | grep "$STORAGE_HOSTNAME_PREFIX"
     return $?
 }
 
@@ -75,21 +87,25 @@ EOF
             mkfs -t $filesystem /dev/md10
             echo "/dev/md10 $mountPoint $filesystem rw,noatime,attr2,inode64,nobarrier,sunit=1024,swidth=4096,nofail 0 2" >> /etc/fstab
         else
-            mkfs -t $filesystem /dev/md10
-            echo "/dev/md10 $mountPoint $filesystem defaults,nofail 0 2" >> /etc/fstab
+            mkfs.ext4 -i 2048 -I 512 -J size=400 -Odir_index,filetype /dev/md10
+            sleep 5
+            tune2fs -o user_xattr /dev/md10
+            echo "/dev/md10 $mountPoint $filesystem noatime,nodiratime,nobarrier,nofail 0 2" >> /etc/fstab
         fi
         mount /dev/md10
     fi
 }
 
-setup_shares()
+setup_disks()
 {
     mkdir -p $SHARE_SCRATCH
 
-    if is_metadata; then
+    if is_metadatanode; then
         mkdir -p $BEEGFS_METADATA
         setup_data_disks $BEEGFS_METADATA "ext4"
-    else
+    fi
+
+    if is_storagenode; then
         mkdir -p $BEEGFS_STORAGE
         setup_data_disks $BEEGFS_STORAGE "xfs"
         mount -a
@@ -97,32 +113,46 @@ setup_shares()
 }
 
 install_beegfs()
-{    
+{
+    # Install BeeGFS repo
     wget -O beegfs-rhel7.repo http://www.beegfs.com/release/latest-stable/dists/beegfs-rhel7.repo
     mv beegfs-rhel7.repo /etc/yum.repos.d/beegfs.repo
     rpm --import http://www.beegfs.com/release/latest-stable/gpg/RPM-GPG-KEY-beegfs
-    
-    yum install -y beegfs-client beegfs-helperd beegfs-utils
-    
-    sed -i 's/^sysMgmtdHost.*/sysMgmtdHost = '${METADATA_HOSTNAME_PREFIX}0'/g' /etc/beegfs/beegfs-client.conf
-    sed -i  's/Type=oneshot.*/Type=oneshot\nRestart=always\nRestartSec=5/g' /etc/systemd/system/multi-user.target.wants/beegfs-client.service
-    echo "$SHARE_SCRATCH /etc/beegfs/beegfs-client.conf" > /etc/beegfs/beegfs-mounts.conf
-    
-    if is_metadata; then
-        yum install -y beegfs-mgmtd beegfs-meta
+
+    if is_mgmtnode; then
+        yum install -y beegfs-mgmtd beegfs-client beegfs-helperd beegfs-utils
+        
+        # Install management server and client
         mkdir -p /data/beegfs/mgmtd
         sed -i 's|^storeMgmtdDirectory.*|storeMgmtdDirectory = /data/beegfs/mgmt|g' /etc/beegfs/beegfs-mgmtd.conf
-        sed -i 's|^storeMetaDirectory.*|storeMetaDirectory = '$BEEGFS_METADATA'|g' /etc/beegfs/beegfs-meta.conf
-        sed -i 's/^sysMgmtdHost.*/sysMgmtdHost = '${METADATA_HOSTNAME_PREFIX}0'/g' /etc/beegfs/beegfs-meta.conf
         systemctl daemon-reload
         systemctl enable beegfs-mgmtd.service
-        systemctl enable beegfs-meta.service
         systemctl start beegfs-mgmtd.service
-        systemctl start beegfs-meta.service        
-    else
+        
+        # setup client
+        sed -i 's/^sysMgmtdHost.*/sysMgmtdHost = '$MGMT_HOSTNAME'/g' /etc/beegfs/beegfs-client.conf
+        sed -i  's/Type=oneshot.*/Type=oneshot\nRestart=always\nRestartSec=5/g' /etc/systemd/system/multi-user.target.wants/beegfs-client.service
+        echo "$SHARE_SCRATCH /etc/beegfs/beegfs-client.conf" > /etc/beegfs/beegfs-mounts.conf
+        systemctl daemon-reload
+        systemctl enable beegfs-helperd.service
+        systemctl enable beegfs-client.service
+    fi
+    
+    if is_metadatanode; then
+        yum install -y beegfs-meta
+        sed -i 's|^storeMetaDirectory.*|storeMetaDirectory = '$BEEGFS_METADATA'|g' /etc/beegfs/beegfs-meta.conf
+        sed -i 's/^sysMgmtdHost.*/sysMgmtdHost = '$MGMT_HOSTNAME'/g' /etc/beegfs/beegfs-meta.conf
+        systemctl daemon-reload
+        systemctl enable beegfs-meta.service
+        systemctl start beegfs-meta.service
+        
+        echo deadline > /sys/block/sdX/queue/scheduler
+    fi
+    
+    if is_storagenode; then
         yum install -y beegfs-storage
         sed -i 's|^storeStorageDirectory.*|storeStorageDirectory = '$BEEGFS_STORAGE'|g' /etc/beegfs/beegfs-storage.conf
-        sed -i 's/^sysMgmtdHost.*/sysMgmtdHost = '${METADATA_HOSTNAME_PREFIX}0'/g' /etc/beegfs/beegfs-storage.conf
+        sed -i 's/^sysMgmtdHost.*/sysMgmtdHost = '$MGMT_HOSTNAME'/g' /etc/beegfs/beegfs-storage.conf
         systemctl daemon-reload
         systemctl enable beegfs-storage.service
         systemctl start beegfs-storage.service
@@ -135,12 +165,12 @@ setup_swap()
 	chmod 600 /mnt/resource/swap
 	mkswap /mnt/resource/swap
 	swapon /mnt/resource/swap
-	echo “/mnt/resource/swap   none  swap  sw  0 0” >> /etc/fstab
+	echo "/mnt/resource/swap   none  swap  sw  0 0" >> /etc/fstab
 }
 
 setup_swap
 install_pkgs
-setup_shares
+setup_disks
 install_beegfs
 shutdown -r +1 &
 exit 0
