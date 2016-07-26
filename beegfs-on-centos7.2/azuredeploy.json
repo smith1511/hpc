@@ -237,6 +237,78 @@
   "resources": [
     {
       "type": "Microsoft.Storage/storageAccounts",
+      "name": "[variables('storageAccountNameMetadataOs')]",
+      "apiVersion": "2015-06-15",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "accountType": "[parameters('storageAccountType')]"
+      }
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "name": "[variables('storageAccountNameStorageOs')]",
+      "apiVersion": "2015-06-15",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "accountType": "[parameters('storageAccountType')]"
+      }
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "name": "[variables('storageAccountNameMeta0')]",
+      "apiVersion": "2015-06-15",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "accountType": "[parameters('storageAccountType')]"
+      }
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "name": "[variables('storageAccountNameMeta1')]",
+      "apiVersion": "2015-06-15",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "accountType": "[parameters('storageAccountType')]"
+      }
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "name": "[variables('storageAccountNameMeta2')]",
+      "apiVersion": "2015-06-15",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "accountType": "[parameters('storageAccountType')]"
+      }
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "name": "[variables('storageAccountNameMeta3')]",
+      "apiVersion": "2015-06-15",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "accountType": "[parameters('storageAccountType')]"
+      }
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "name": "[variables('storageAccountNameMeta4')]",
+      "apiVersion": "2015-06-15",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "accountType": "[parameters('storageAccountType')]"
+      }
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "name": "[variables('storageAccountNameMeta5')]",
+      "apiVersion": "2015-06-15",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "accountType": "[parameters('storageAccountType')]"
+      }
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts",
       "name": "[variables('storageAccountName0')]",
       "apiVersion": "2015-06-15",
       "location": "[resourceGroup().location]",
@@ -279,7 +351,34 @@
       "properties": {
         "accountType": "[parameters('storageAccountType')]"
       }
-    },	
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "name": "[variables('storageAccountName5')]",
+      "apiVersion": "2015-06-15",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "accountType": "[parameters('storageAccountType')]"
+      }
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "name": "[variables('storageAccountName6')]",
+      "apiVersion": "2015-06-15",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "accountType": "[parameters('storageAccountType')]"
+      }
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "name": "[variables('storageAccountName7')]",
+      "apiVersion": "2015-06-15",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "accountType": "[parameters('storageAccountType')]"
+      }
+    },
     {
       "type": "Microsoft.Compute/availabilitySets",
       "name": "[variables('avSetName')]",
@@ -404,6 +503,7 @@
       "name": "[concat(variables('metadataVMName'), copyindex())]",
       "location": "[resourceGroup().location]",
       "dependsOn": [
+        "[concat('Microsoft.Storage/storageAccounts/', variables('storageAccountNameMetadataOs'))]",
         "[concat('Microsoft.Storage/storageAccounts/', variables('storageAccountNameMeta0'))]",
         "[concat('Microsoft.Storage/storageAccounts/', variables('storageAccountNameMeta1'))]",
         "[concat('Microsoft.Storage/storageAccounts/', variables('storageAccountNameMeta2'))]",
@@ -571,6 +671,7 @@
       "name": "[concat(variables('storageVMName'), copyindex())]",
       "location": "[resourceGroup().location]",
       "dependsOn": [
+        "[concat('Microsoft.Storage/storageAccounts/', variables('storageAccountNameStorageOs'))]",
         "[concat('Microsoft.Storage/storageAccounts/', variables('storageAccountName0'))]",
         "[concat('Microsoft.Storage/storageAccounts/', variables('storageAccountName1'))]",
         "[concat('Microsoft.Storage/storageAccounts/', variables('storageAccountName2'))]",
