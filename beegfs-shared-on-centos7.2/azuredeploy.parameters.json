@@ -1,0 +1,30 @@
+{
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "adminUserName": {
+      "value": "azureuser"
+    },
+    "adminPassword": {
+      "value": ""
+    },
+    "metadataNodeCount": {
+      "value": 3
+    },
+    "metadataDataDiskSize": {
+      "value": 128
+    },
+    "storageNodeSize": {
+      "value": "Standard_DS4_v2"
+    },
+    "storageNodeCount": {
+      "value": 6
+    },
+    "storageDataDiskSize": {
+      "value": 1023
+    },
+    "storageAccountType": {
+      "value": "Premium_LRS"
+    }
+  }
+}
