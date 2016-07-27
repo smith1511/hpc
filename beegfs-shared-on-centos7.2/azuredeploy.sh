@@ -69,10 +69,12 @@ setup_data_disks()
 {
     mountPoint="$1"
     filesystem="$2"
+    devices="$3"
+    raidDevice="$4"
     createdPartitions=""
 
     # Loop through and partition disks until not found
-    for disk in sdc sdd sde sdf sdg sdh sdi sdj sdk sdl sdm sdn sdo sdp sdq sdr; do
+    for disk in $devices; do
         fdisk -l /dev/$disk || break
         fdisk /dev/$disk << EOF
 n
@@ -90,17 +92,17 @@ EOF
     # Create RAID-0 volume
     if [ -n "$createdPartitions" ]; then
         devices=`echo $createdPartitions | wc -w`
-        mdadm --create /dev/md10 --level 0 --raid-devices $devices $createdPartitions
+        mdadm --create /dev/$raidDevice --level 0 --raid-devices $devices $createdPartitions
         if [ "$filesystem" == "xfs" ]; then
-            mkfs -t $filesystem /dev/md10
-            echo "/dev/md10 $mountPoint $filesystem rw,noatime,attr2,inode64,nobarrier,sunit=1024,swidth=4096,nofail 0 2" >> /etc/fstab
+            mkfs -t $filesystem /dev/$raidDevice
+            echo "/dev/$raidDevice $mountPoint $filesystem rw,noatime,attr2,inode64,nobarrier,sunit=1024,swidth=4096,nofail 0 2" >> /etc/fstab
         else
-            mkfs.ext4 -i 2048 -I 512 -J size=400 -Odir_index,filetype /dev/md10
+            mkfs.ext4 -i 2048 -I 512 -J size=400 -Odir_index,filetype /dev/$raidDevice
             sleep 5
-            tune2fs -o user_xattr /dev/md10
-            echo "/dev/md10 $mountPoint $filesystem noatime,nodiratime,nobarrier,nofail 0 2" >> /etc/fstab
+            tune2fs -o user_xattr /dev/$raidDevice
+            echo "/dev/$raidDevice $mountPoint $filesystem noatime,nodiratime,nobarrier,nofail 0 2" >> /etc/fstab
         fi
-        mount /dev/md10
+        mount /dev/$raidDevice
     fi
 }
 
@@ -109,15 +111,18 @@ setup_disks()
     mkdir -p $SHARE_SCRATCH
 
     if is_metadatanode; then
+        # Configure metadata and storage disks
+        mkdir -p $BEEGFS_STORAGE
         mkdir -p $BEEGFS_METADATA
-        setup_data_disks $BEEGFS_METADATA "ext4"
+        setup_data_disks $BEEGFS_STORAGE "xfs" "sdc sdd sde sdf sdg sdh sdi sdj" "md10"
+        setup_data_disks $BEEGFS_METADATA "ext4" "sdk sdl sdm sdn sdo sdp" "md20"
+    else
+        # Configure storage
+        mkdir -p $BEEGFS_STORAGE
+        setup_data_disks $BEEGFS_STORAGE "xfs" "sdc sdd sde sdf sdg sdh sdi sdj sdk sdl sdm sdn sdo sdp" "md10"
     fi
 
-    if is_storagenode; then
-        mkdir -p $BEEGFS_STORAGE
-        setup_data_disks $BEEGFS_STORAGE "xfs"
-        mount -a
-    fi
+    mount -a
 }
 
 install_beegfs()
