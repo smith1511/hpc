@@ -160,6 +160,8 @@ PBS_CORE_LIMIT=unlimited
 PBS_SCP=/bin/scp
 EOF
     
+        /etc/init.d/pbs start
+
         for i in $(seq 0 $LAST_WORKER_INDEX); do
             nodeName=${WORKER_HOSTNAME_PREFIX}${i}
             /opt/pbs/bin/qmgr -c "c n $nodeName"
@@ -176,9 +178,9 @@ PBS_HOME=/var/spool/pbs
 PBS_CORE_LIMIT=unlimited
 PBS_SCP=/bin/scp
 EOF
-    fi
 
-    /etc/init.d/pbs start
+        /etc/init.d/pbs start
+    fi
 
     cd ..
 }
