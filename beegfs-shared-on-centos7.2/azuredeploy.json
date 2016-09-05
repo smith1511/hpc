@@ -17,8 +17,7 @@
     },
     "metadataNodeCount": {
       "type": "int",
-      "defaultValue": 0,
-      "allowedValues": [ 0, 1, 2, 3, 4, 5, 6 ],
+      "defaultValue": 1,
       "metadata": {
         "description": "This template creates N metadata nodes. Use metadataNodeCount to specify that N."
       }
