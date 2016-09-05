@@ -131,6 +131,10 @@ install_beegfs()
     wget -O beegfs-rhel7.repo http://www.beegfs.com/release/latest-stable/dists/beegfs-rhel7.repo
     mv beegfs-rhel7.repo /etc/yum.repos.d/beegfs.repo
     rpm --import http://www.beegfs.com/release/latest-stable/gpg/RPM-GPG-KEY-beegfs
+    
+    # Disable SELinux
+    sed -i 's/SELINUX=.*/SELINUX=disabled/g' /etc/selinux/config
+    setenforce 0
 
     if is_mgmtnode; then
         yum install -y beegfs-mgmtd beegfs-client beegfs-helperd beegfs-utils
@@ -179,9 +183,19 @@ setup_swap()
 	echo "/mnt/resource/swap   none  swap  sw  0 0" >> /etc/fstab
 }
 
+SETUP_MARKER=/var/tmp/configured
+if [ -e "$SETUP_MARKER" ]; then
+    echo "We're already configured, exiting..."
+    exit 0
+fi
+
 setup_swap
 install_pkgs
 setup_disks
 install_beegfs
+
+# Create marker file so we know we're configured
+touch $SETUP_MARKER
+
 shutdown -r +1 &
 exit 0
