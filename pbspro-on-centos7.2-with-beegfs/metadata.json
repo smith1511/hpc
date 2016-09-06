@@ -1,0 +1,7 @@
+{
+  "itemDisplayName": "Create a PBS Pro OSS cluster on CentOS 7.2 HPC SKU",
+  "description": "Creates a PBS Pro OSS HPC cluster running CentOS 7.2 with BeeGFS cluster filesystem.  This cluster is ready to run Intel MPI workloads when used with A8 or A9 VMs.",
+  "githubUsername": "smith1511",
+  "summary": "PBS Pro OSS HPC Cluster with BeeGFS",
+  "dateUpdated": "2016-09-05"
+}

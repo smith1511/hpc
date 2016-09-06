@@ -7,8 +7,8 @@ if [[ $(id -u) -ne 0 ]] ; then
     exit 1
 fi
 
-if [ $# != 5 ]; then
-    echo "Usage: $0 <MasterHostname> <WorkerHostnamePrefix> <WorkerNodeCount> <HPCUserName> <TemplateBaseUrl>"
+if [ $# != 6 ]; then
+    echo "Usage: $0 <MasterHostname> <WorkerHostnamePrefix> <WorkerNodeCount> <HPCUserName> <TemplateBaseUrl> <BeeGFSStoragePath>"
     exit 1
 fi
 
@@ -17,11 +17,14 @@ MASTER_HOSTNAME=$1
 WORKER_HOSTNAME_PREFIX=$2
 WORKER_COUNT=$3
 TEMPLATE_BASE_URL="$5"
+BEEGFS_STORAGE="$6"
 LAST_WORKER_INDEX=$(($WORKER_COUNT - 1))
 
 # Shares
 SHARE_HOME=/share/home
 SHARE_DATA=/share/data
+SHARE_SCRATCH=/share/scratch
+BEEGFS_METADATA=/data/beegfs/meta
 
 # Hpc User
 HPC_USER=$4
@@ -44,7 +47,7 @@ is_master()
 install_pkgs()
 {
     yum -y install epel-release
-    yum -y install zlib zlib-devel bzip2 bzip2-devel bzip2-libs openssl openssl-devel openssl-libs gcc gcc-c++ nfs-utils rpcbind mdadm wget python-pip
+    yum -y install zlib zlib-devel bzip2 bzip2-devel bzip2-libs openssl openssl-devel openssl-libs gcc gcc-c++ nfs-utils rpcbind mdadm wget python-pip kernel kernel-devel openmpi openmpi-devel automake autoconf
 }
 
 # Partitions all data disks attached to the VM and creates
@@ -53,6 +56,7 @@ install_pkgs()
 setup_data_disks()
 {
     mountPoint="$1"
+    filesystem="$2"
     createdPartitions=""
 
     # Loop through and partition disks until not found
@@ -75,8 +79,13 @@ EOF
     if [ -n "$createdPartitions" ]; then
         devices=`echo $createdPartitions | wc -w`
         mdadm --create /dev/md10 --level 0 --raid-devices $devices $createdPartitions
-        mkfs -t ext4 /dev/md10
-        echo "/dev/md10 $mountPoint ext4 defaults,nofail 0 2" >> /etc/fstab
+        if [ "$filesystem" == "xfs" ]; then
+            mkfs -t $filesystem /dev/md10
+            echo "/dev/md10 $mountPoint $filesystem rw,noatime,attr2,inode64,nobarrier,sunit=1024,swidth=4096,nofail 0 2" >> /etc/fstab
+        else
+            mkfs -t $filesystem /dev/md10
+            echo "/dev/md10 $mountPoint $filesystem defaults,nofail 0 2" >> /etc/fstab
+        fi
         mount /dev/md10
     fi
 }
@@ -92,9 +101,12 @@ setup_shares()
 {
     mkdir -p $SHARE_HOME
     mkdir -p $SHARE_DATA
+    mkdir -p $SHARE_SCRATCH
 
     if is_master; then
-        setup_data_disks $SHARE_DATA
+        mkdir -p $BEEGFS_METADATA
+        setup_data_disks $BEEGFS_METADATA "ext4"
+        
         echo "$SHARE_HOME    *(rw,async)" >> /etc/exports
         echo "$SHARE_DATA    *(rw,async)" >> /etc/exports
 
@@ -103,6 +115,8 @@ setup_shares()
         systemctl start rpcbind || echo "Already enabled"
         systemctl start nfs-server || echo "Already enabled"
     else
+        mkdir -p $BEEGFS_STORAGE
+        setup_data_disks $BEEGFS_STORAGE "xfs"
         echo "master:$SHARE_HOME $SHARE_HOME    nfs4    rw,auto,_netdev 0 0" >> /etc/fstab
         echo "master:$SHARE_DATA $SHARE_DATA    nfs4    rw,auto,_netdev 0 0" >> /etc/fstab
         mount -a
@@ -225,6 +239,8 @@ setup_hpc_user()
     else
         useradd -c "HPC User" -g $HPC_GROUP -d $SHARE_HOME/$HPC_USER -s /bin/bash -u $HPC_UID $HPC_USER
     fi
+    
+    chown $HPC_USER:$HPC_GROUP $SHARE_SCRATCH
 }
 
 # Sets all common environment variables and system parameters.
@@ -242,8 +258,51 @@ setup_env()
     echo "export I_MPI_DYNAMIC_CONNECTION=0" >> /etc/profile.d/mpi.sh
 }
 
+install_beegfs()
+{    
+    wget -O beegfs-rhel7.repo http://www.beegfs.com/release/latest-stable/dists/beegfs-rhel7.repo
+    mv beegfs-rhel7.repo /etc/yum.repos.d/beegfs.repo
+    rpm --import http://www.beegfs.com/release/latest-stable/gpg/RPM-GPG-KEY-beegfs
+    
+    yum install -y beegfs-client beegfs-helperd beegfs-utils
+    
+    sed -i 's/^sysMgmtdHost.*/sysMgmtdHost = '$MASTER_HOSTNAME'/g' /etc/beegfs/beegfs-client.conf
+    sed -i  's/Type=oneshot.*/Type=oneshot\nRestart=always\nRestartSec=5/g' /etc/systemd/system/multi-user.target.wants/beegfs-client.service
+    echo "$SHARE_SCRATCH /etc/beegfs/beegfs-client.conf" > /etc/beegfs/beegfs-mounts.conf
+    
+    if is_master; then
+        yum install -y beegfs-mgmtd beegfs-meta
+        mkdir -p /data/beegfs/mgmtd
+        sed -i 's|^storeMgmtdDirectory.*|storeMgmtdDirectory = /data/beegfs/mgmt|g' /etc/beegfs/beegfs-mgmtd.conf
+        sed -i 's|^storeMetaDirectory.*|storeMetaDirectory = '$BEEGFS_METADATA'|g' /etc/beegfs/beegfs-meta.conf
+        sed -i 's/^sysMgmtdHost.*/sysMgmtdHost = '$MASTER_HOSTNAME'/g' /etc/beegfs/beegfs-meta.conf
+        /etc/init.d/beegfs-mgmtd start
+        /etc/init.d/beegfs-meta start
+    else
+        yum install -y beegfs-storage
+        sed -i 's|^storeStorageDirectory.*|storeStorageDirectory = '$BEEGFS_STORAGE'|g' /etc/beegfs/beegfs-storage.conf
+        sed -i 's/^sysMgmtdHost.*/sysMgmtdHost = '$MASTER_HOSTNAME'/g' /etc/beegfs/beegfs-storage.conf
+        /etc/init.d/beegfs-storage start
+    fi
+    
+    systemctl daemon-reload
+}
+
+setup_swap()
+{
+    fallocate -l 5g /mnt/resource/swap
+	chmod 600 /mnt/resource/swap
+	mkswap /mnt/resource/swap
+	swapon /mnt/resource/swap
+	echo “/mnt/resource/swap   none  swap  sw  0 0” >> /etc/fstab
+}
+
+setup_swap
 install_pkgs
 setup_shares
 setup_hpc_user
+install_beegfs
 install_pbspro
 setup_env
+shutdown -r +1 &
+exit 0
