@@ -6,7 +6,7 @@ Deploys a PBS Pro cluster with head node and n worker nodes.
    <img alt="Deploy to Azure" src="http://azuredeploy.net/deploybutton.png"/>
 </a>
 
-1. Fill in the 3 mandatory parameters - public DNS name, a storage account to hold VM image, and admin user password.
+1. Fill in the mandatory parameters - public DNS name, and admin user password, HPC username, node sizes and count.
 
 2. Select an existing resource group or enter the name of a new resource group to create.
 
@@ -15,6 +15,20 @@ Deploys a PBS Pro cluster with head node and n worker nodes.
 4. Accept the terms and agreements.
 
 5. Click Create.
+
+## Parameter Description
+
+1. DNS Prefix - this is the DNS name that will be assigned to the head node that you will SSH to.
+
+2. Admin username and password - the Linux admin user and password on each VM.
+
+3. HPC Username - This is the user that will be created on each node to run PBS Pro jobs.  This user has public key SSH auth configured and has a shared home directory.
+
+4. Headnode and Workernode VM Size - The Azure VM size for the headnode and workernodes.
+
+5. Workernode count - The number of workernodes to create.
+
+6. Datadisk Size - this is the size in GB of each datadisk attached to the worker nodes.  The master node has 16 datadisks attached and configured as a RAID0 device.  This device is shared via NFS and mounted on the worker nodes under /share/scratch
 
 ## Accessing the cluster
 
