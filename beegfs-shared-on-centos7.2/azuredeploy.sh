@@ -109,6 +109,12 @@ EOF
 setup_disks()
 {
     mkdir -p $SHARE_SCRATCH
+    
+    # Dump the current disk config for debugging
+    fdisk -l
+    
+    # Dump the scsi config
+    lsscsi
 
     if is_metadatanode; then
         # Configure metadata and storage disks
