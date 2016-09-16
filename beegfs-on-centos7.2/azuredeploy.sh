@@ -78,11 +78,18 @@ w
 EOF
         createdPartitions="$createdPartitions /dev/${disk}1"
     done
+    
+    sleep 10
 
     # Create RAID-0 volume
     if [ -n "$createdPartitions" ]; then
         devices=`echo $createdPartitions | wc -w`
         mdadm --create /dev/md10 --level 0 --raid-devices $devices $createdPartitions
+        
+        sleep 10
+        
+        mdadm /dev/md10
+        
         if [ "$filesystem" == "xfs" ]; then
             mkfs -t $filesystem /dev/md10
             echo "/dev/md10 $mountPoint $filesystem rw,noatime,attr2,inode64,nobarrier,sunit=1024,swidth=4096,nofail 0 2" >> /etc/fstab
@@ -92,6 +99,9 @@ EOF
             tune2fs -o user_xattr /dev/md10
             echo "/dev/md10 $mountPoint $filesystem noatime,nodiratime,nobarrier,nofail 0 2" >> /etc/fstab
         fi
+        
+        sleep 10
+        
         mount /dev/md10
     fi
 }
