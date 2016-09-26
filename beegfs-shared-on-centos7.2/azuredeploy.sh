@@ -22,9 +22,16 @@ TEMPLATE_BASE_URL="$4"
 MGMT_HOSTNAME=${STORAGE_HOSTNAME_PREFIX}0
 
 # Shares
+SHARE_HOME=/share/home
 SHARE_SCRATCH=/share/scratch
 BEEGFS_METADATA=/data/beegfs/meta
 BEEGFS_STORAGE=/data/beegfs/storage
+
+# User
+HPC_USER=beegfs
+HPC_UID=7007
+HPC_GROUP=hpc
+HPC_GID=7007
 
 is_mgmtnode()
 {
@@ -60,6 +67,8 @@ install_pkgs()
 {
     yum -y install epel-release
     yum -y install zlib zlib-devel bzip2 bzip2-devel bzip2-libs openssl openssl-devel openssl-libs gcc gcc-c++ nfs-utils rpcbind mdadm wget python-pip kernel kernel-devel openmpi openmpi-devel automake autoconf
+    systemctl stop firewalld
+    systemctl disable firewalld
 }
 
 # Partitions all data disks attached to the VM and creates
@@ -118,6 +127,7 @@ EOF
 
 setup_disks()
 {
+    mkdir -p $SHARE_HOME
     mkdir -p $SHARE_SCRATCH
     
     # Dump the current disk config for debugging
@@ -125,17 +135,37 @@ setup_disks()
     
     # Dump the scsi config
     lsscsi
+    
+    # Get the root/OS disk so we know which device it uses and can ignore it later
+    rootDevice=`mount | grep "on / type" | awk '{print $1}' | sed 's/[0-9]//g'`
+    
+    # Get the TMP disk so we know which device and can ignore it later
+    tmpDevice=`mount | grep "on /mnt/resource type" | awk '{print $1}' | sed 's/[0-9]//g'`
 
-    if is_metadatanode; then
-        # Configure metadata and storage disks
-        mkdir -p $BEEGFS_STORAGE
-        mkdir -p $BEEGFS_METADATA
-        setup_data_disks $BEEGFS_STORAGE "xfs" "sdc sdd sde sdf sdg sdh sdi sdj" "md10"
-        setup_data_disks $BEEGFS_METADATA "ext4" "sdk sdl sdm sdn sdo sdp" "md20"
+    # Get the metadata and storage disk sizes from fdisk, we ignore the disks above
+    metadataDiskSize=`sudo fdisk -l | grep '^Disk /dev/' | grep -v $rootDevice | grep -v $tmpDevice | awk '{print $3}' | sort -n -r | tail -1`
+    storageDiskSize=`sudo fdisk -l | grep '^Disk /dev/' | grep -v $rootDevice | grep -v $tmpDevice | awk '{print $3}' | sort -n | tail -1`
+
+    if [ $metadataDiskSize -eq $storageDiskSize ]; then
+        # If metadata and storage disks are the same size, we grab 6 for meta, 10 for storage
+        metadataDevices="`sudo fdisk -l | grep '^Disk /dev/' | grep $metadataDiskSize | awk '{print $2}' | awk -F: '{print $1}' | sort | head -6 | tr '\n' ' ' | sed 's|/dev/||g'`"
+        storageDevices="`sudo fdisk -l | grep '^Disk /dev/' | grep $storageDiskSize | awk '{print $2}' | awk -F: '{print $1}' | sort | tail -10 | tr '\n' ' ' | sed 's|/dev/||g'`"
     else
-        # Configure storage
-        mkdir -p $BEEGFS_STORAGE
-        setup_data_disks $BEEGFS_STORAGE "xfs" "sdc sdd sde sdf sdg sdh sdi sdj sdk sdl sdm sdn sdo sdp" "md10"
+        # Based on the known disk sizes, grab the meta and storage devices
+        metadataDevices="`sudo fdisk -l | grep '^Disk /dev/' | grep $metadataDiskSize | awk '{print $2}' | awk -F: '{print $1}' | sort | tr '\n' ' ' | sed 's|/dev/||g'`"
+        storageDevices="`sudo fdisk -l | grep '^Disk /dev/' | grep $storageDiskSize | awk '{print $2}' | awk -F: '{print $1}' | sort | tr '\n' ' ' | sed 's|/dev/||g'`"
+    fi
+
+    mkdir -p $BEEGFS_STORAGE
+    mkdir -p $BEEGFS_METADATA
+    
+    setup_data_disks $BEEGFS_STORAGE "xfs" "$storageDevices" "md10"
+    setup_data_disks $BEEGFS_METADATA "ext4" "$metadataDevices" "md20"
+
+    if !is_master; then
+        echo "$MGMT_HOSTNAME:$SHARE_HOME $SHARE_HOME    nfs4    rw,auto,_netdev 0 0" >> /etc/fstab
+        mount -a
+        mount
     fi
 
     mount -a
@@ -153,21 +183,13 @@ install_beegfs()
     setenforce 0
 
     if is_mgmtnode; then
-        yum install -y beegfs-mgmtd beegfs-client beegfs-helperd beegfs-utils
+        yum install -y beegfs-mgmtd beegfs-utils
         
         # Install management server and client
         mkdir -p /data/beegfs/mgmtd
         sed -i 's|^storeMgmtdDirectory.*|storeMgmtdDirectory = /data/beegfs/mgmt|g' /etc/beegfs/beegfs-mgmtd.conf
         systemctl daemon-reload
         systemctl enable beegfs-mgmtd.service
-        
-        # setup client
-        sed -i 's/^sysMgmtdHost.*/sysMgmtdHost = '$MGMT_HOSTNAME'/g' /etc/beegfs/beegfs-client.conf
-        sed -i  's/Type=oneshot.*/Type=oneshot\nRestart=always\nRestartSec=5/g' /etc/systemd/system/multi-user.target.wants/beegfs-client.service
-        echo "$SHARE_SCRATCH /etc/beegfs/beegfs-client.conf" > /etc/beegfs/beegfs-mounts.conf
-        systemctl daemon-reload
-        systemctl enable beegfs-helperd.service
-        systemctl enable beegfs-client.service
     fi
     
     if is_metadatanode; then
@@ -188,6 +210,15 @@ install_beegfs()
         systemctl daemon-reload
         systemctl enable beegfs-storage.service
     fi
+    
+    # setup client
+    yum install -y beegfs-client beegfs-helperd beegfs-utils
+    sed -i 's/^sysMgmtdHost.*/sysMgmtdHost = '$MGMT_HOSTNAME'/g' /etc/beegfs/beegfs-client.conf
+    sed -i  's/Type=oneshot.*/Type=oneshot\nRestart=always\nRestartSec=5/g' /etc/systemd/system/multi-user.target.wants/beegfs-client.service
+    echo "$SHARE_SCRATCH /etc/beegfs/beegfs-client.conf" > /etc/beegfs/beegfs-mounts.conf
+    systemctl daemon-reload
+    systemctl enable beegfs-helperd.service
+    systemctl enable beegfs-client.service
 }
 
 setup_swap()
@@ -199,6 +230,52 @@ setup_swap()
 	echo "/mnt/resource/swap   none  swap  sw  0 0" >> /etc/fstab
 }
 
+setup_user()
+{
+    # disable selinux
+    sed -i 's/enforcing/disabled/g' /etc/selinux/config
+    setenforce permissive
+    
+    groupadd -g $HPC_GID $HPC_GROUP
+
+    # Don't require password for HPC user sudo
+    echo "$HPC_USER ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+    
+    # Disable tty requirement for sudo
+    sed -i 's/^Defaults[ ]*requiretty/# Defaults requiretty/g' /etc/sudoers
+
+    if is_master; then
+    
+        useradd -c "HPC User" -g $HPC_GROUP -m -d $SHARE_HOME/$HPC_USER -s /bin/bash -u $HPC_UID $HPC_USER
+
+        mkdir -p $SHARE_HOME/$HPC_USER/.ssh
+        
+        # Configure public key auth for the HPC user
+        ssh-keygen -t rsa -f $SHARE_HOME/$HPC_USER/.ssh/id_rsa -q -P ""
+        cat $SHARE_HOME/$HPC_USER/.ssh/id_rsa.pub > $SHARE_HOME/$HPC_USER/.ssh/authorized_keys
+
+        echo "Host *" > $SHARE_HOME/$HPC_USER/.ssh/config
+        echo "    StrictHostKeyChecking no" >> $SHARE_HOME/$HPC_USER/.ssh/config
+        echo "    UserKnownHostsFile /dev/null" >> $SHARE_HOME/$HPC_USER/.ssh/config
+        echo "    PasswordAuthentication no" >> $SHARE_HOME/$HPC_USER/.ssh/config
+
+        # Fix .ssh folder ownership
+        chown -R $HPC_USER:$HPC_GROUP $SHARE_HOME/$HPC_USER
+
+        # Fix permissions
+        chmod 700 $SHARE_HOME/$HPC_USER/.ssh
+        chmod 644 $SHARE_HOME/$HPC_USER/.ssh/config
+        chmod 644 $SHARE_HOME/$HPC_USER/.ssh/authorized_keys
+        chmod 600 $SHARE_HOME/$HPC_USER/.ssh/id_rsa
+        chmod 644 $SHARE_HOME/$HPC_USER/.ssh/id_rsa.pub
+    else
+        useradd -c "HPC User" -g $HPC_GROUP -d $SHARE_HOME/$HPC_USER -s /bin/bash -u $HPC_UID $HPC_USER
+    fi
+    
+    chown $HPC_USER:$HPC_GROUP $SHARE_SCRATCH
+    chown $HPC_USER:$HPC_GROUP $LOCAL_SCRATCH
+}
+
 SETUP_MARKER=/var/tmp/configured
 if [ -e "$SETUP_MARKER" ]; then
     echo "We're already configured, exiting..."
@@ -208,6 +285,7 @@ fi
 setup_swap
 install_pkgs
 setup_disks
+setup_user
 install_beegfs
 
 # Create marker file so we know we're configured
