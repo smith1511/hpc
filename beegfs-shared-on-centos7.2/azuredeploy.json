@@ -351,7 +351,7 @@
               "vhd": {
                 "Uri": "[concat('http://',concat(uniqueString(string(copyindex()),'storageos', resourceGroup().id), 'sa'),'.blob.core.windows.net/',variables('vhdContainerName'),'/',variables('storageVMName'),copyindex(),'-metadatadisk0.vhd')]"
               },
-              "caching": "None",
+              "caching": "ReadOnly",
               "createOption": "Empty"
             },
             {
@@ -361,7 +361,7 @@
               "vhd": {
                 "Uri": "[concat('http://',concat(uniqueString(string(copyindex()),'storageos', resourceGroup().id), 'sa'),'.blob.core.windows.net/',variables('vhdContainerName'),'/',variables('storageVMName'),copyindex(),'-metadatadisk1.vhd')]"
               },
-              "caching": "None",
+              "caching": "ReadOnly",
               "createOption": "Empty"
             },
             {
@@ -371,7 +371,7 @@
               "vhd": {
                 "Uri": "[concat('http://',concat(uniqueString(string(copyindex()),'storageos', resourceGroup().id), 'sa'),'.blob.core.windows.net/',variables('vhdContainerName'),'/',variables('storageVMName'),copyindex(),'-metadatadisk2.vhd')]"
               },
-              "caching": "None",
+              "caching": "ReadOnly",
               "createOption": "Empty"
             },
             {
@@ -381,7 +381,7 @@
               "vhd": {
                 "Uri": "[concat('http://',concat(uniqueString(string(copyindex()),'storageos', resourceGroup().id), 'sa'),'.blob.core.windows.net/',variables('vhdContainerName'),'/',variables('storageVMName'),copyindex(),'-metadatadisk3.vhd')]"
               },
-              "caching": "None",
+              "caching": "ReadOnly",
               "createOption": "Empty"
             },
             {
@@ -391,7 +391,7 @@
               "vhd": {
                 "Uri": "[concat('http://',concat(uniqueString(string(copyindex()),'storageos', resourceGroup().id), 'sa'),'.blob.core.windows.net/',variables('vhdContainerName'),'/',variables('storageVMName'),copyindex(),'-metadatadisk4.vhd')]"
               },
-              "caching": "None",
+              "caching": "ReadOnly",
               "createOption": "Empty"
             },
             {
@@ -401,7 +401,7 @@
               "vhd": {
                 "Uri": "[concat('http://',concat(uniqueString(string(copyindex()),'storageos', resourceGroup().id), 'sa'),'.blob.core.windows.net/',variables('vhdContainerName'),'/',variables('storageVMName'),copyindex(),'-metadatadisk5.vhd')]"
               },
-              "caching": "None",
+              "caching": "ReadOnly",
               "createOption": "Empty"
             }
           ]
