@@ -100,7 +100,7 @@
   "resources": [
     {
       "type": "Microsoft.Storage/storageAccounts",
-      "name": "[concat(uniqueString(copyindex(),'storageos', resourceGroup().id), 'sa')]",
+      "name": "[concat(uniqueString(string(copyindex()),'storageos', resourceGroup().id), 'sa')]",
       "apiVersion": "2015-06-15",
       "location": "[resourceGroup().location]",
       "copy": {
@@ -208,7 +208,7 @@
       "name": "[concat(variables('storageVMName'), copyindex())]",
       "location": "[resourceGroup().location]",
       "dependsOn": [
-        "[concat(uniqueString(copyindex(),'storageos', resourceGroup().id), 'sa')]",
+        "[concat('Microsoft.Storage/storageAccounts/', concat(uniqueString(string(copyindex()),'storageos', resourceGroup().id), 'sa'))]",
         "[concat('Microsoft.Network/networkInterfaces/', variables('nicName'), 'storage', copyindex())]",
         "[concat('Microsoft.Compute/availabilitySets/', variables('avSetName'))]"
       ],
@@ -238,7 +238,7 @@
           "osDisk": {
             "name": "osdisk",
             "vhd": {
-              "uri": "[concat('http://',concat(uniqueString(copyindex(),'storageos', resourceGroup().id), 'sa')],'.blob.core.windows.net/',variables('vhdContainerName'),'/',variables('OSDiskName'),variables('storageVMName'),copyindex(),'.vhd')]"
+              "uri": "[concat('http://',concat(uniqueString(string(copyindex()),'storageos', resourceGroup().id), 'sa'),'.blob.core.windows.net/',variables('vhdContainerName'),'/',variables('OSDiskName'),variables('storageVMName'),copyindex(),'.vhd')]"
             },
             "caching": "ReadWrite",
             "createOption": "FromImage"
@@ -249,7 +249,7 @@
               "diskSizeGB": "[parameters('storageDataDiskSize')]",
               "lun": 0,
               "vhd": {
-                "Uri": "[concat('http://',concat(uniqueString(copyindex(),'storageos', resourceGroup().id), 'sa')],'.blob.core.windows.net/',variables('vhdContainerName'),'/',variables('storageVMName'),copyindex(),'-datadisk0.vhd')]"
+                "Uri": "[concat('http://',concat(uniqueString(string(copyindex()),'storageos', resourceGroup().id), 'sa'),'.blob.core.windows.net/',variables('vhdContainerName'),'/',variables('storageVMName'),copyindex(),'-datadisk0.vhd')]"
               },
               "caching": "None",
               "createOption": "Empty"
@@ -259,7 +259,7 @@
               "diskSizeGB": "[parameters('storageDataDiskSize')]",
               "lun": 1,
               "vhd": {
-                "Uri": "[concat('http://',concat(uniqueString(copyindex(),'storageos', resourceGroup().id), 'sa')],'.blob.core.windows.net/',variables('vhdContainerName'),'/',variables('storageVMName'),copyindex(),'-datadisk1.vhd')]"
+                "Uri": "[concat('http://',concat(uniqueString(string(copyindex()),'storageos', resourceGroup().id), 'sa'),'.blob.core.windows.net/',variables('vhdContainerName'),'/',variables('storageVMName'),copyindex(),'-datadisk1.vhd')]"
               },
               "caching": "None",
               "createOption": "Empty"
@@ -269,7 +269,7 @@
               "diskSizeGB": "[parameters('storageDataDiskSize')]",
               "lun": 2,
               "vhd": {
-                "Uri": "[concat('http://',concat(uniqueString(copyindex(),'storageos', resourceGroup().id), 'sa')],'.blob.core.windows.net/',variables('vhdContainerName'),'/',variables('storageVMName'),copyindex(),'-datadisk2.vhd')]"
+                "Uri": "[concat('http://',concat(uniqueString(string(copyindex()),'storageos', resourceGroup().id), 'sa'),'.blob.core.windows.net/',variables('vhdContainerName'),'/',variables('storageVMName'),copyindex(),'-datadisk2.vhd')]"
               },
               "caching": "None",
               "createOption": "Empty"
@@ -279,7 +279,7 @@
               "diskSizeGB": "[parameters('storageDataDiskSize')]",
               "lun": 3,
               "vhd": {
-                "Uri": "[concat('http://',concat(uniqueString(copyindex(),'storageos', resourceGroup().id), 'sa')],'.blob.core.windows.net/',variables('vhdContainerName'),'/',variables('storageVMName'),copyindex(),'-datadisk3.vhd')]"
+                "Uri": "[concat('http://',concat(uniqueString(string(copyindex()),'storageos', resourceGroup().id), 'sa'),'.blob.core.windows.net/',variables('vhdContainerName'),'/',variables('storageVMName'),copyindex(),'-datadisk3.vhd')]"
               },
               "caching": "None",
               "createOption": "Empty"
@@ -289,7 +289,7 @@
               "diskSizeGB": "[parameters('storageDataDiskSize')]",
               "lun": 4,
               "vhd": {
-                "Uri": "[concat('http://',concat(uniqueString(copyindex(),'storageos', resourceGroup().id), 'sa')],'.blob.core.windows.net/',variables('vhdContainerName'),'/',variables('storageVMName'),copyindex(),'-datadisk4.vhd')]"
+                "Uri": "[concat('http://',concat(uniqueString(string(copyindex()),'storageos', resourceGroup().id), 'sa'),'.blob.core.windows.net/',variables('vhdContainerName'),'/',variables('storageVMName'),copyindex(),'-datadisk4.vhd')]"
               },
               "caching": "None",
               "createOption": "Empty"
@@ -299,7 +299,7 @@
               "diskSizeGB": "[parameters('storageDataDiskSize')]",
               "lun": 5,
               "vhd": {
-                "Uri": "[concat('http://',concat(uniqueString(copyindex(),'storageos', resourceGroup().id), 'sa')],'.blob.core.windows.net/',variables('vhdContainerName'),'/',variables('storageVMName'),copyindex(),'-datadisk5.vhd')]"
+                "Uri": "[concat('http://',concat(uniqueString(string(copyindex()),'storageos', resourceGroup().id), 'sa'),'.blob.core.windows.net/',variables('vhdContainerName'),'/',variables('storageVMName'),copyindex(),'-datadisk5.vhd')]"
               },
               "caching": "None",
               "createOption": "Empty"
@@ -309,7 +309,7 @@
               "diskSizeGB": "[parameters('storageDataDiskSize')]",
               "lun": 6,
               "vhd": {
-                "Uri": "[concat('http://',concat(uniqueString(copyindex(),'storageos', resourceGroup().id), 'sa')],'.blob.core.windows.net/',variables('vhdContainerName'),'/',variables('storageVMName'),copyindex(),'-datadisk6.vhd')]"
+                "Uri": "[concat('http://',concat(uniqueString(string(copyindex()),'storageos', resourceGroup().id), 'sa'),'.blob.core.windows.net/',variables('vhdContainerName'),'/',variables('storageVMName'),copyindex(),'-datadisk6.vhd')]"
               },
               "caching": "None",
               "createOption": "Empty"
@@ -319,7 +319,7 @@
               "diskSizeGB": "[parameters('storageDataDiskSize')]",
               "lun": 7,
               "vhd": {
-                "Uri": "[concat('http://',concat(uniqueString(copyindex(),'storageos', resourceGroup().id), 'sa')],'.blob.core.windows.net/',variables('vhdContainerName'),'/',variables('storageVMName'),copyindex(),'-datadisk7.vhd')]"
+                "Uri": "[concat('http://',concat(uniqueString(string(copyindex()),'storageos', resourceGroup().id), 'sa'),'.blob.core.windows.net/',variables('vhdContainerName'),'/',variables('storageVMName'),copyindex(),'-datadisk7.vhd')]"
               },
               "caching": "None",
               "createOption": "Empty"
@@ -329,7 +329,7 @@
               "diskSizeGB": "[parameters('storageDataDiskSize')]",
               "lun": 8,
               "vhd": {
-                "Uri": "[concat('http://',concat(uniqueString(copyindex(),'storageos', resourceGroup().id), 'sa')],'.blob.core.windows.net/',variables('vhdContainerName'),'/',variables('storageVMName'),copyindex(),'-datadisk8.vhd')]"
+                "Uri": "[concat('http://',concat(uniqueString(string(copyindex()),'storageos', resourceGroup().id), 'sa'),'.blob.core.windows.net/',variables('vhdContainerName'),'/',variables('storageVMName'),copyindex(),'-datadisk8.vhd')]"
               },
               "caching": "None",
               "createOption": "Empty"
@@ -339,7 +339,7 @@
               "diskSizeGB": "[parameters('storageDataDiskSize')]",
               "lun": 9,
               "vhd": {
-                "Uri": "[concat('http://',concat(uniqueString(copyindex(),'storageos', resourceGroup().id), 'sa')],'.blob.core.windows.net/',variables('vhdContainerName'),'/',variables('storageVMName'),copyindex(),'-datadisk9.vhd')]"
+                "Uri": "[concat('http://',concat(uniqueString(string(copyindex()),'storageos', resourceGroup().id), 'sa'),'.blob.core.windows.net/',variables('vhdContainerName'),'/',variables('storageVMName'),copyindex(),'-datadisk9.vhd')]"
               },
               "caching": "None",
               "createOption": "Empty"
@@ -349,7 +349,7 @@
               "diskSizeGB": "[parameters('metadataDataDiskSize')]",
               "lun": 10,
               "vhd": {
-                "Uri": "[concat('http://',concat(uniqueString(copyindex(),'storageos', resourceGroup().id), 'sa')],'.blob.core.windows.net/',variables('vhdContainerName'),'/',variables('storageVMName'),copyindex(),'-metadatadisk0.vhd')]"
+                "Uri": "[concat('http://',concat(uniqueString(string(copyindex()),'storageos', resourceGroup().id), 'sa'),'.blob.core.windows.net/',variables('vhdContainerName'),'/',variables('storageVMName'),copyindex(),'-metadatadisk0.vhd')]"
               },
               "caching": "None",
               "createOption": "Empty"
@@ -359,7 +359,7 @@
               "diskSizeGB": "[parameters('metadataDataDiskSize')]",
               "lun": 11,
               "vhd": {
-                "Uri": "[concat('http://',concat(uniqueString(copyindex(),'storageos', resourceGroup().id), 'sa')],'.blob.core.windows.net/',variables('vhdContainerName'),'/',variables('storageVMName'),copyindex(),'-metadatadisk1.vhd')]"
+                "Uri": "[concat('http://',concat(uniqueString(string(copyindex()),'storageos', resourceGroup().id), 'sa'),'.blob.core.windows.net/',variables('vhdContainerName'),'/',variables('storageVMName'),copyindex(),'-metadatadisk1.vhd')]"
               },
               "caching": "None",
               "createOption": "Empty"
@@ -369,7 +369,7 @@
               "diskSizeGB": "[parameters('metadataDataDiskSize')]",
               "lun": 12,
               "vhd": {
-                "Uri": "[concat('http://',concat(uniqueString(copyindex(),'storageos', resourceGroup().id), 'sa')],'.blob.core.windows.net/',variables('vhdContainerName'),'/',variables('storageVMName'),copyindex(),'-metadatadisk2.vhd')]"
+                "Uri": "[concat('http://',concat(uniqueString(string(copyindex()),'storageos', resourceGroup().id), 'sa'),'.blob.core.windows.net/',variables('vhdContainerName'),'/',variables('storageVMName'),copyindex(),'-metadatadisk2.vhd')]"
               },
               "caching": "None",
               "createOption": "Empty"
@@ -379,7 +379,7 @@
               "diskSizeGB": "[parameters('metadataDataDiskSize')]",
               "lun": 13,
               "vhd": {
-                "Uri": "[concat('http://',concat(uniqueString(copyindex(),'storageos', resourceGroup().id), 'sa')],'.blob.core.windows.net/',variables('vhdContainerName'),'/',variables('storageVMName'),copyindex(),'-metadatadisk3.vhd')]"
+                "Uri": "[concat('http://',concat(uniqueString(string(copyindex()),'storageos', resourceGroup().id), 'sa'),'.blob.core.windows.net/',variables('vhdContainerName'),'/',variables('storageVMName'),copyindex(),'-metadatadisk3.vhd')]"
               },
               "caching": "None",
               "createOption": "Empty"
@@ -389,7 +389,7 @@
               "diskSizeGB": "[parameters('metadataDataDiskSize')]",
               "lun": 14,
               "vhd": {
-                "Uri": "[concat('http://',concat(uniqueString(copyindex(),'storageos', resourceGroup().id), 'sa')],'.blob.core.windows.net/',variables('vhdContainerName'),'/',variables('storageVMName'),copyindex(),'-metadatadisk4.vhd')]"
+                "Uri": "[concat('http://',concat(uniqueString(string(copyindex()),'storageos', resourceGroup().id), 'sa'),'.blob.core.windows.net/',variables('vhdContainerName'),'/',variables('storageVMName'),copyindex(),'-metadatadisk4.vhd')]"
               },
               "caching": "None",
               "createOption": "Empty"
@@ -399,7 +399,7 @@
               "diskSizeGB": "[parameters('metadataDataDiskSize')]",
               "lun": 15,
               "vhd": {
-                "Uri": "[concat('http://',concat(uniqueString(copyindex(),'storageos', resourceGroup().id), 'sa')],'.blob.core.windows.net/',variables('vhdContainerName'),'/',variables('storageVMName'),copyindex(),'-metadatadisk5.vhd')]"
+                "Uri": "[concat('http://',concat(uniqueString(string(copyindex()),'storageos', resourceGroup().id), 'sa'),'.blob.core.windows.net/',variables('vhdContainerName'),'/',variables('storageVMName'),copyindex(),'-metadatadisk5.vhd')]"
               },
               "caching": "None",
               "createOption": "Empty"
