@@ -130,6 +130,14 @@ setup_disks()
     mkdir -p $SHARE_HOME
     mkdir -p $SHARE_SCRATCH
     
+    if is_master; then
+        echo "$SHARE_HOME    *(rw,async)" >> /etc/exports
+        systemctl enable rpcbind || echo "Already enabled"
+        systemctl enable nfs-server || echo "Already enabled"
+        systemctl start rpcbind || echo "Already enabled"
+        systemctl start nfs-server || echo "Already enabled"
+    fi
+    
     # Dump the current disk config for debugging
     fdisk -l
     
