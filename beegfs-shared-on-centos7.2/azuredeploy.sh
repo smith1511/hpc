@@ -130,7 +130,7 @@ setup_disks()
     mkdir -p $SHARE_HOME
     mkdir -p $SHARE_SCRATCH
     
-    if is_master; then
+    if is_mgmtnode; then
         echo "$SHARE_HOME    *(rw,async)" >> /etc/exports
         systemctl enable rpcbind || echo "Already enabled"
         systemctl enable nfs-server || echo "Already enabled"
@@ -170,7 +170,7 @@ setup_disks()
     setup_data_disks $BEEGFS_STORAGE "xfs" "$storageDevices" "md10"
     setup_data_disks $BEEGFS_METADATA "ext4" "$metadataDevices" "md20"
 
-    if !is_master; then
+    if ! is_mgmtnode; then
         echo "$MGMT_HOSTNAME:$SHARE_HOME $SHARE_HOME    nfs4    rw,auto,_netdev 0 0" >> /etc/fstab
         mount -a
         mount
@@ -252,7 +252,7 @@ setup_user()
     # Disable tty requirement for sudo
     sed -i 's/^Defaults[ ]*requiretty/# Defaults requiretty/g' /etc/sudoers
 
-    if is_master; then
+    if is_mgmtnode; then
     
         useradd -c "HPC User" -g $HPC_GROUP -m -d $SHARE_HOME/$HPC_USER -s /bin/bash -u $HPC_UID $HPC_USER
 
