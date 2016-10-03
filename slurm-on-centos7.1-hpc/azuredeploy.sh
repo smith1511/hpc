@@ -241,11 +241,13 @@ install_slurm()
         mv slurmctld.service /usr/lib/systemd/system
         systemctl daemon-reload
         systemctl enable slurmctld
+        systemctl start slurmctld
     else
         wget $TEMPLATE_BASE_URL/slurmd.service
         mv slurmd.service /usr/lib/systemd/system
         systemctl daemon-reload
         systemctl enable slurmd
+        systemctl start slurmd
     fi
 
     cd ..
