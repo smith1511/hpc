@@ -57,8 +57,25 @@ is_master()
 #
 install_pkgs()
 {
+    rpm --rebuilddb
+    updatedb
+    yum clean all
     yum -y install epel-release
-    yum -y install zlib zlib-devel bzip2 bzip2-devel bzip2-libs openssl openssl-devel openssl-libs gcc gcc-c++ nfs-utils rpcbind mdadm wget python-pip
+    #yum --exclude WALinuxAgent,intel-*,kernel*,*microsoft-*,msft-* -y update
+
+    sed -i.bak -e '28d' /etc/yum.conf
+    sed -i '28i#exclude=kernel*' /etc/yum.conf
+
+    yum -y install zlib zlib-devel bzip2 bzip2-devel bzip2-libs openssl openssl-devel openssl-libs \
+        nfs-utils rpcbind git libicu libicu-devel make zip unzip mdadm wget gsl bc rpm-build  \
+        readline-devel pam-devel libXtst.i686 libXtst.x86_64 make.x86_64 sysstat.x86_64 python-pip automake autoconf \
+        binutils.x86_64 compat-libcap1.x86_64 glibc.i686 glibc.x86_64 \
+        ksh compat-libstdc++-33 libaio.i686 libaio.x86_64 libaio-devel.i686 libaio-devel.x86_64 \
+        libgcc.i686 libgcc.x86_64 libstdc++.i686 libstdc++.x86_64 libstdc++-devel.i686 libstdc++-devel.x86_64 \
+        libXi.i686 libXi.x86_64 gcc gcc-c++ gcc.x86_64 gcc-c++.x86_64 glibc-devel.i686 glibc-devel.x86_64 libtool libxml2-devel
+
+    sed -i.bak -e '28d' /etc/yum.conf
+    sed -i '28iexclude=kernel*' /etc/yum.conf
 }
 
 # Partitions all data disks attached to the VM and creates
@@ -218,9 +235,15 @@ install_slurm()
     install_slurm_config
 
     if is_master; then
-        /usr/sbin/slurmctld -vvvv
+        wget $TEMPLATE_BASE_URL/slurmctld.service
+        mv slurmctld.service /usr/lib/systemd/system
+        systemctl daemon-reload
+        systemctl enable slurmctld
     else
-        /usr/sbin/slurmd -vvvv
+        wget $TEMPLATE_BASE_URL/slurmd.service
+        mv slurmd.service /usr/lib/systemd/system
+        systemctl daemon-reload
+        systemctl enable slurmd
     fi
 
     cd ..
