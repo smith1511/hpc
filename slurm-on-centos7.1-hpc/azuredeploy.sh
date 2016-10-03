@@ -179,7 +179,9 @@ install_munge()
     chown munge:munge /etc/munge/munge.key
     chmod 0400 /etc/munge/munge.key
 
-    /etc/init.d/munge start
+    systemctl daemon-reload
+    systemctl enable munge.service
+    systemctl start munge.service
 
     cd ..
 }
