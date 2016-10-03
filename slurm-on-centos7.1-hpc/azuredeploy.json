@@ -122,7 +122,7 @@
   },
   "variables": {
     "imagePublisher": "OpenLogic",
-    "imageOffer": "CentOS",
+    "imageOffer": "CentOS-HPC",
     "imageSku": "7.1",
     "newStorageAccountName": "[concat(uniqueString(resourceGroup().id), 'sa')]",
     "vmStorageAccountContainerName": "vhd",
