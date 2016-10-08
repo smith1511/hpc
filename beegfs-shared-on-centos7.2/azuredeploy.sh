@@ -284,6 +284,13 @@ setup_user()
     chown $HPC_USER:$HPC_GROUP $LOCAL_SCRATCH
 }
 
+setup_env()
+{
+    echo "net.ipv4.neigh.default.gc_thresh1=1100" >> /etc/sysctl.conf
+    echo "net.ipv4.neigh.default.gc_thresh2=2200" >> /etc/sysctl.conf
+    echo "net.ipv4.neigh.default.gc_thresh3=4400" >> /etc/sysctl.conf
+}
+
 SETUP_MARKER=/var/tmp/configured
 if [ -e "$SETUP_MARKER" ]; then
     echo "We're already configured, exiting..."
@@ -294,6 +301,7 @@ setup_swap
 install_pkgs
 setup_disks
 setup_user
+setup_env
 install_beegfs
 
 # Create marker file so we know we're configured
