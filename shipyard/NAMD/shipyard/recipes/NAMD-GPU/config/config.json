@@ -1,0 +1,24 @@
+{
+    "batch_shipyard": {
+        "storage_account_settings": "mystorageaccount"
+    },
+    "global_resources": {
+        "docker_images": [
+            "alfpark/namd:2.11-cuda"
+        ],
+        "files": [
+            {
+                "source": {
+                    "path": "@SOURCE_PATH@"
+                },
+                "destination": {
+                    "storage_account_settings": "mystorageaccount",
+                    "data_transfer": {
+                        "container": "@JOB_ID@-inputs",
+                        "blobxfer_extra_options": "--no-computefilemd5"
+                    }
+                }
+            }
+        ]
+    }
+}
