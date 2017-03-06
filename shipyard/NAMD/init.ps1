@@ -1,4 +1,6 @@
-
+# 
+# Download and installs Batch Shipyard
+#
 $shipyardVersion = "2.5.3"
 
 # Download shipyard

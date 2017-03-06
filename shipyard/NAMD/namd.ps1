@@ -102,7 +102,7 @@ if ($lastexitcode -ne 0)
     exit 1
 }
 
-if ($autoPool -a $poolKeepAlive -eq $false)
+if ($autoPool -and $poolKeepAlive -eq $false)
 {
     Write-Host "Deleting pool..."
     & $env:python $shipyard pool del --configdir "$tmpDir" --yes

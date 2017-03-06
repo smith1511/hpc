@@ -31,8 +31,14 @@ if %errorlevel% neq 0 (
     exit /b 1
 )
 
-if "%2" neq "" (
+set namd_conf=%1
+set namd_args=%2
+set pool_args=""
 
+if "%1" == "-poolId" (
+    set pool_args="%1 %2"
+    set namd_conf=%3
+    set namd_args=%4
 )
 
-%powershell% -exec bypass -file %script_dir%\namd.ps1 -namdConfFilePath %1 -namdArgs "%2" -recipe %recipe% -poolId namd-tcp
+%powershell% -exec bypass -file %script_dir%\namd.ps1 -namdConfFilePath %namd_conf% -namdArgs "%namd_args%" -recipe %recipe% %pool_args%
