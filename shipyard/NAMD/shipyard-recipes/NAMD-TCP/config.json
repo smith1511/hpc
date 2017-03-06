@@ -23,7 +23,7 @@
                     "storage_account_settings": "mystorageaccount",
                     "data_transfer": {
                         "container": "@JOB_ID@",
-                        "blobxfer_extra_options": "--no-computefilemd5 --numworkers 1"
+                        "blobxfer_extra_options": "--no-computefilemd5"
                     }
                 }
             }
