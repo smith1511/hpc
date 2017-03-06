@@ -27,15 +27,17 @@ You'll need a Azure Storage and Batch account created in the same region.  You c
 
 ### Setup
 
-* Open a command prompt - Windows-R - then cmd.exe
-* Clone the azure-hpc [repo](https://github.com/Azure/azure-hpc) (top-right) into a local drive, we'll use C:\azure-hpc as an example - git clone https://github.com/Azure/azure-hpc.git
-* Change directory to the repo, 'cd C:\azure-hpc\LifeSciences\NAMD'.
+* Open a command prompt (Windows-R) and run cmd.exe
+* Clone the azure-hpc repository into a local drive, we'll use C:\azure-hpc for this example
+  * e.g. git clone https://github.com/Azure/azure-hpc.git
+* Change directory to NAMD within the repository, 'cd C:\azure-hpc\LifeSciences\NAMD'.
 * Initialize the directory by running the init.cmd script - this will download and install Azure Batch Shipyard.
 * Update credentials.json with your Azure Storage and Batch account.
 
 ## Running Azure NAMD
 
-* Open a command prompt - Windows-R - then cmd.exe
+* Open a command prompt (Windows-R) and run cmd.exe
 * Ensure you're in the 'C:\azure-hpc\LifeSciences\NAMD' directory, or where ever you placed Azure NAMD.
 * Execute 'namd <path to NAMD conf>'
-** Note that all files within the NAMD configuration file directory will be uploaded to the virtual machines so ensure all required files exist there.
+
+Note that all files within the NAMD configuration file directory will be uploaded to the virtual machines so ensure all required files exist there.
