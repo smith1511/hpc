@@ -9,7 +9,7 @@ Azure NAMD is based on Azure Batch and Shipyard technologies which utilise Docke
 
 ### Prerequisites
 
-#### Python
+#### Python 3.5 and Pip
 
 You'll need to have Python 3.5+ installed on the system and available in the PATH.  You can tests this by opening a command prompt (cmd.exe) and typing 'python.exe'.  If python is installed you'll end up in a python console.  Check the Python version is at least 3.5.
 
