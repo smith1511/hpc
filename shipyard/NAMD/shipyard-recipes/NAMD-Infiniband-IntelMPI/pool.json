@@ -1,12 +1,12 @@
 {
     "pool_specification": {
-        "id": "namd-tcp",
-        "vm_size": "Standard_D4_v2",
+        "id": "@POOL_ID@",
+        "vm_size": "Standard_H16R",
         "vm_count": 2,
         "inter_node_communication_enabled": true,
         "publisher": "OpenLogic",
-        "offer": "CentOS",
-        "sku": "7.2",
+        "offer": "CentOS-HPC",
+        "sku": "7.1",
         "ssh": {
             "username": "docker"
         },
