@@ -8,7 +8,7 @@ if [[ $(id -u) -ne 0 ]] ; then
     exit 1
 fi
 
-if [ $# != 6 ]; then
+if [ $# != 5 ]; then
     echo "Usage: $0 <HostnamePrefix> <NodeCount> <HPCUserName> <TemplateBaseUrl> <BeeGFSStoragePath>"
     exit 1
 fi
@@ -18,7 +18,7 @@ HOSTNAME_PREFIX=$1
 NODE_COUNT=$2
 TEMPLATE_BASE_URL="$4"
 BEEGFS_STORAGE="$5"
-MASTER_HOSTNAME=${HOSTNAME_PREFIX}0
+MASTER_HOSTNAME="${HOSTNAME_PREFIX}000000"
 WORKER_COUNT=$(($NODE_COUNT - 1))
 LAST_WORKER_INDEX=$(($WORKER_COUNT - 1))
 
@@ -199,10 +199,14 @@ install_slurm_config()
             wget "$TEMPLATE_BASE_URL/slurm.template.conf"
         fi
 
+        workerRangeStart="000001"
+        workerRangeEnd="`printf %06d $LAST_WORKER_INDEX`"
+
         cat slurm.template.conf |
         sed 's/__MASTER__/'"$MASTER_HOSTNAME"'/g' |
                 sed 's/__HOSTNAME_PREFIX__/'"$HOSTNAME_PREFIX"'/g' |
-                sed 's/__LAST_WORKER_INDEX__/'"$LAST_WORKER_INDEX"'/g' > $SLURM_CONF_DIR/slurm.conf
+                sed 's/__WORKER_RANGE_START__/'"$workerRangeStart"'/g' |
+                sed 's/__WORKER_RANGE_END__/'"$workerRangeEnd"'/g' > $SLURM_CONF_DIR/slurm.conf
     fi
 
     ln -s $SLURM_CONF_DIR/slurm.conf /etc/slurm/slurm.conf

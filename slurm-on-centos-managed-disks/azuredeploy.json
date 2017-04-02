@@ -129,6 +129,9 @@
       "publicIPAddressName":"publicips",
       "nodePrefix":"node",
       "armApiVersion":"2015-06-15",
+      "loadBalancerId":"[concat(resourceGroup().name, 'lb')]",
+      "vnetId":"[concat(resourceGroup().name, 'vnet')]",
+      "pipId":"[concat(resourceGroup().name, 'pip')]",
       "nicName":"nic",
       "networkSettings":{
          "virtualNetworkName":"virtualnetwork",
