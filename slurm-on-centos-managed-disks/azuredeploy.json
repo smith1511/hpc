@@ -194,7 +194,12 @@
                      {
                         "lun":"1",
                         "createOption":"empty",
-                        "diskSizeGB":"128"
+                        "diskSizeGB":"[parameters('dataDiskSize')]"
+                     },
+                     {
+                        "lun":"2",
+                        "createOption":"empty",
+                        "diskSizeGB":"[parameters('dataDiskSize')]"
                      }
                   ],
                   "imageReference":{
