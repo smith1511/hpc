@@ -244,7 +244,7 @@
       },
       "vnetID":"[resourceId('Microsoft.Network/virtualNetworks',variables('networkSettings').virtualNetworkName)]",
       "subnetRef":"[concat(variables('vnetID'),'/subnets/',variables('networkSettings').subnet.dse.name)]",
-      "templateBaseUrl":"https://raw.githubusercontent.com/smith1511/hpc/master/slurm-on-centos7.1-hpc2/",
+      "templateBaseUrl":"https://raw.githubusercontent.com/smith1511/hpc/master/slurm-on-centos-managed-disks/",
       "installationCLI":"[concat('bash azuredeploy.sh ', variables('masterVMName'), ' ', variables('workerVMName'), ' ', parameters('workerNodeCount'), ' ', parameters('hpcUserName'), ' ', variables('templateBaseUrl'), ' ', parameters('installClusterFilesystem'), ' ', parameters('clusterFilesystemLocation'))]"
    },
    "resources":[
@@ -321,7 +321,7 @@
          "type":"Microsoft.Compute/disks",
          "name":"[concat('masterdatadisk', copyindex())]",
          "apiVersion":"[variables('computeResouresApiVersion')]",
-         "location":"[variables('location')]",
+         "location":"[resourceGroup().location]",
          "copy":{
             "name":"foo",
             "count":"[variables('masterDiskCount')]"
@@ -338,7 +338,7 @@
          "type":"Microsoft.Compute/disks",
          "name":"[concat('workerdatadisk', copyindex())]",
          "apiVersion":"[variables('computeResouresApiVersion')]",
-         "location":"[variables('location')]",
+         "location":"[resourceGroup().location]",
          "copy":{
             "name":"foo",
             "count":"[mul(parameters('workerNodeCount'), variables('workerDiskCount'))]"
