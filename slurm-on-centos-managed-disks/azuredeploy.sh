@@ -8,18 +8,18 @@ if [[ $(id -u) -ne 0 ]] ; then
     exit 1
 fi
 
-if [ $# != 5 ]; then
-    echo "Usage: $0 <HostnamePrefix> <NodeCount> <HPCUserName> <TemplateBaseUrl> <BeeGFSStoragePath>"
+if [ $# != 6 ]; then
+    echo "Usage: $0 <MasterHostname> <WorkerHostnamePrefix> <WorkerNodeCount> <HPCUserName> <TemplateBaseUrl> <ClusterFilesystem> <BeeGFSStoragePath>"
     exit 1
 fi
 
 # Set user args
-HOSTNAME_PREFIX=$1
-NODE_COUNT=$2
-TEMPLATE_BASE_URL="$4"
-BEEGFS_STORAGE="$5"
-MASTER_HOSTNAME="${HOSTNAME_PREFIX}000000"
-WORKER_COUNT=$(($NODE_COUNT - 1))
+MASTER_HOSTNAME=$1
+WORKER_HOSTNAME_PREFIX=$2
+WORKER_COUNT=$3
+TEMPLATE_BASE_URL="$5"
+CLUSTERFS="$6"
+BEEGFS_STORAGE="$7"
 LAST_WORKER_INDEX=$(($WORKER_COUNT - 1))
 
 # Shares
@@ -42,7 +42,7 @@ SLURM_VERSION=15-08-1-1
 SLURM_CONF_DIR=$SHARE_DATA/conf
 
 # Hpc User
-HPC_USER=$3
+HPC_USER=$4
 HPC_UID=7007
 HPC_GROUP=hpc
 HPC_GID=7007
@@ -199,14 +199,10 @@ install_slurm_config()
             wget "$TEMPLATE_BASE_URL/slurm.template.conf"
         fi
 
-        workerRangeStart="000001"
-        workerRangeEnd="`printf %06d $LAST_WORKER_INDEX`"
-
         cat slurm.template.conf |
         sed 's/__MASTER__/'"$MASTER_HOSTNAME"'/g' |
-                sed 's/__HOSTNAME_PREFIX__/'"$HOSTNAME_PREFIX"'/g' |
-                sed 's/__WORKER_RANGE_START__/'"$workerRangeStart"'/g' |
-                sed 's/__WORKER_RANGE_END__/'"$workerRangeEnd"'/g' > $SLURM_CONF_DIR/slurm.conf
+                sed 's/__WORKER_HOSTNAME_PREFIX__/'"$WORKER_HOSTNAME_PREFIX"'/g' |
+                sed 's/__LAST_WORKER_INDEX__/'"$LAST_WORKER_INDEX"'/g' > $SLURM_CONF_DIR/slurm.conf
     fi
 
     ln -s $SLURM_CONF_DIR/slurm.conf /etc/slurm/slurm.conf
@@ -395,14 +391,18 @@ setup_swap()
 	chmod 600 /mnt/resource/swap
 	mkswap /mnt/resource/swap
 	swapon /mnt/resource/swap
-	echo “/mnt/resource/swap   none  swap  sw  0 0” >> /etc/fstab
+	echo "/mnt/resource/swap   none  swap  sw  0 0" >> /etc/fstab
 }
 
 setup_swap
 install_pkgs
 setup_shares
 setup_hpc_user
-install_beegfs
+
+if [ "$CLUSTERFS" == "BeeGFS" ]; then
+    install_beegfs
+fi
+
 install_munge
 install_slurm
 setup_env

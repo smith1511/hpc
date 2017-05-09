@@ -2,6 +2,12 @@
    "$schema":"https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
    "contentVersion":"1.0.0.0",
    "parameters":{
+      "dnsPrefix":{
+         "type":"string",
+         "metadata":{
+            "description":"Unique public dns prefix where the master node will be exposed"
+         }
+      },
       "adminUserName":{
          "type":"string",
          "defaultValue":"azureuser",
@@ -33,7 +39,7 @@
             "description":"The OS image offer to use, eithe HPC with Intel MPI or the vanilla CentOS version."
          }
       },
-      "nodeSize":{
+      "headNodeSize":{
          "type":"string",
          "defaultValue":"Standard_H8",
          "allowedValues":[
@@ -82,14 +88,86 @@
             "description":"Size of the head node."
          }
       },
-      "nodeCount":{
+      "workerNodeSize":{
+         "type":"string",
+         "defaultValue":"Standard_H16",
+         "allowedValues":[
+            "Standard_A1",
+            "Standard_A2",
+            "Standard_A3",
+            "Standard_A4",
+            "Standard_A5",
+            "Standard_A6",
+            "Standard_A7",
+            "Standard_A8",
+            "Standard_A9",
+            "Standard_A10",
+            "Standard_A11",
+            "Standard_D1",
+            "Standard_D2",
+            "Standard_D3",
+            "Standard_D4",
+            "Standard_D11",
+            "Standard_D12",
+            "Standard_D13",
+            "Standard_D14",
+            "Standard_DS1",
+            "Standard_DS2",
+            "Standard_DS3",
+            "Standard_DS4",
+            "Standard_D11",
+            "Standard_D12",
+            "Standard_D13",
+            "Standard_D14",
+            "Standard_DS11",
+            "Standard_DS12",
+            "Standard_DS13",
+            "Standard_DS14",
+            "Standard_DS1_v2",
+            "Standard_DS2_v2",
+            "Standard_DS3_v2",
+            "Standard_DS4_v2",
+            "Standard_DS5_v2",
+            "Standard_DS11_v2",
+            "Standard_DS12_v2",
+            "Standard_DS13_v2",
+            "Standard_DS14_v2",
+            "Standard_F1",
+            "Standard_F2",
+            "Standard_F4",
+            "Standard_F8",
+            "Standard_F16",
+            "Standard_G1",
+            "Standard_G2",
+            "Standard_G3",
+            "Standard_G4",
+            "Standard_G5",
+            "Standard_GS1",
+            "Standard_GS2",
+            "Standard_GS3",
+            "Standard_GS4",
+            "Standard_GS5",
+            "Standard_H8",
+            "Standard_H16",
+            "Standard_H8m",
+            "Standard_H16m",
+            "Standard_H16mr",
+            "Standard_H16r",
+            "Standard_L4",
+            "Standard_L8",
+            "Standard_L16",
+            "Standard_L32"
+         ],
+         "metadata":{
+            "description":"Size of the worker nodes."
+         }
+      },
+      "workerNodeCount":{
          "type":"int",
          "defaultValue":2,
          "metadata":{
-            "description":"The number of nodes in the cluster, including the headnode"
-         },
-         "minValue":2,
-         "maxValue":100
+            "description":"This template creates N worker node. Use workerNodeCount to specify that N."
+         }
       },
       "dataDiskSize":{
          "type":"int",
@@ -107,6 +185,17 @@
          ],
          "metadata":{
             "description":"Type of storage account to create for disks."
+         }
+      },
+      "installClusterFilesystem":{
+         "type":"string",
+         "defaultValue":"None",
+         "allowedValues":[
+            "None",
+            "BeeGFS"
+         ],
+         "metadata":{
+            "description":"Cluster filesystem to install."
          }
       },
       "clusterFilesystemLocation":{
@@ -127,11 +216,13 @@
       "imageSku":"7.1",
       "publicIPAddressType":"Dynamic",
       "publicIPAddressName":"publicips",
-      "nodePrefix":"node",
+      "masterVMName":"master",
+      "workerVMName":"worker",
       "armApiVersion":"2015-06-15",
-      "loadBalancerId":"[concat(resourceGroup().name, 'lb')]",
-      "vnetId":"[concat(resourceGroup().name, 'vnet')]",
-      "pipId":"[concat(resourceGroup().name, 'pip')]",
+      "computeResouresApiVersion":"2016-04-30-preview",
+      "avSetName":"avSet",
+      "masterDiskCount":4,
+      "workerDiskCount":4,
       "nicName":"nic",
       "networkSettings":{
          "virtualNetworkName":"virtualnetwork",
@@ -151,212 +242,342 @@
             "master":"10.0.0.254"
          }
       },
-      "templateBaseUrl":"https://raw.githubusercontent.com/smith1511/hpc/master/slurm-on-centos-managed-disks/",
-      "installationCLI":"[concat('bash azuredeploy.sh ', variables('nodePrefix'), ' ', parameters('nodeCount'), ' ', parameters('hpcUserName'), ' ', variables('templateBaseUrl'), ' ', parameters('clusterFilesystemLocation'))]"
+      "vnetID":"[resourceId('Microsoft.Network/virtualNetworks',variables('networkSettings').virtualNetworkName)]",
+      "subnetRef":"[concat(variables('vnetID'),'/subnets/',variables('networkSettings').subnet.dse.name)]",
+      "templateBaseUrl":"https://raw.githubusercontent.com/smith1511/hpc/master/slurm-on-centos7.1-hpc2/",
+      "installationCLI":"[concat('bash azuredeploy.sh ', variables('masterVMName'), ' ', variables('workerVMName'), ' ', parameters('workerNodeCount'), ' ', parameters('hpcUserName'), ' ', variables('templateBaseUrl'), ' ', parameters('installClusterFilesystem'), ' ', parameters('clusterFilesystemLocation'))]"
    },
    "resources":[
       {
-         "type":"Microsoft.Compute/virtualMachineScaleSets",
-         "sku":{
-            "name":"[parameters('nodeSize')]",
-            "tier":"Standard",
-            "capacity":"[parameters('nodeCount')]"
-         },
-         "name":"scaleset",
-         "apiVersion":"2016-04-30-preview",
+         "type":"Microsoft.Compute/availabilitySets",
+         "name":"[variables('avSetName')]",
+         "apiVersion":"[variables('armApiVersion')]",
          "location":"[resourceGroup().location]",
          "properties":{
-            "singlePlacementGroup":true,
-            "upgradePolicy":{
-               "mode":"Manual"
-            },
-            "virtualMachineProfile":{
-               "osProfile":{
-                  "computerNamePrefix":"[variables('nodePrefix')]",
-                  "adminUsername":"[parameters('adminUsername')]",
-                  "adminPassword":"[parameters('adminPassword')]",
-                  "linuxConfiguration":{
-                     "disablePasswordAuthentication":false
-                  },
-                  "secrets":[
 
-                  ]
-               },
-               "storageProfile":{
-                  "osDisk":{
-                     "createOption":"FromImage",
-                     "caching":"ReadWrite",
-                     "managedDisk":{
-                        "storageAccountType":"[parameters('storageAccountType')]"
-                     }
-                  },
-                  "dataDisks":[
-                     {
-                        "lun":"1",
-                        "createOption":"empty",
-                        "diskSizeGB":"[parameters('dataDiskSize')]"
-                     },
-                     {
-                        "lun":"2",
-                        "createOption":"empty",
-                        "diskSizeGB":"[parameters('dataDiskSize')]"
-                     }
-                  ],
-                  "imageReference":{
-                     "publisher":"[variables('imagePublisher')]",
-                     "offer":"[parameters('imageOffer')]",
-                     "sku":"[variables('imageSku')]",
-                     "version":"latest"
-                  }
-               },
-               "networkProfile":{
-                  "networkInterfaceConfigurations":[
-                     {
-                        "name":"Nic",
-                        "properties":{
-                           "primary":true,
-                           "ipConfigurations":[
-                              {
-                                 "name":"IpConfig",
-                                 "properties":{
-                                    "subnet":{
-                                       "id":"[concat(resourceId('Microsoft.Network/virtualNetworks', 'vnet'), '/subnets/default')]"
-                                    },
-                                    "loadBalancerBackendAddressPools":[
-                                       {
-                                          "id":"[concat(resourceId('Microsoft.Network/loadBalancers' ,'lb'), '/backendAddressPools/bepool')]"
-                                       }
-                                    ],
-                                    "loadBalancerInboundNatPools":[
-                                       {
-                                          "id":"[concat(resourceId('Microsoft.Network/loadBalancers', 'lb'), '/inboundNatPools/natpool')]"
-                                       }
-                                    ]
-                                 }
-                              }
-                           ]
-                        }
-                     }
-                  ]
-               },
-               "extensionProfile":{
-                  "extensions":[
-                     {
-                        "name":"lapextension",
-                        "properties":{
-                           "publisher":"Microsoft.Azure.Extensions",
-                           "type":"CustomScript",
-                           "typeHandlerVersion":"2.0",
-                           "autoUpgradeMinorVersion":false,
-                           "settings":{
-                              "fileUris":[
-                                 "[concat(variables('templateBaseUrl'), 'azuredeploy.sh')]"
-                              ]
-                           },
-                           "protectedSettings":{
-                              "commandToExecute": "[variables('installationCLI')]"
-                           }
-                        }
-                     }
-                  ]
-               }
-            },
-            "overprovision":true
-         },
-         "dependsOn":[
-            "[resourceId('Microsoft.Network/virtualNetworks', 'vnet')]",
-            "[resourceId('Microsoft.Network/loadBalancers', 'lb')]"
-         ]
+         }
       },
       {
-         "type":"Microsoft.Network/loadBalancers",
-         "name":"lb",
-         "apiVersion":"2016-03-30",
-         "location":"[resourceGroup().location]",
-         "properties":{
-            "frontendIPConfigurations":[
-               {
-                  "name":"LoadBalancerFrontEnd",
-                  "properties":{
-                     "privateIPAllocationMethod":"Dynamic",
-                     "publicIPAddress":{
-                        "id":"[resourceId('Microsoft.Network/publicIPAddresses', 'pip')]"
-                     }
-                  }
-               }
-            ],
-            "backendAddressPools":[
-               {
-                  "name":"bepool"
-               }
-            ],
-            "loadBalancingRules":[
-
-            ],
-            "probes":[
-
-            ],
-            "inboundNatRules":[
-
-            ],
-            "outboundNatRules":[
-
-            ],
-            "inboundNatPools":[
-               {
-                  "name":"natpool",
-                  "properties":{
-                     "frontendPortRangeStart":50000,
-                     "frontendPortRangeEnd":50100,
-                     "backendPort":22,
-                     "protocol":"Tcp",
-                     "frontendIPConfiguration":{
-                        "id":"[concat(resourceId('Microsoft.Network/loadBalancers', 'lb'), '/frontendIPConfigurations/loadBalancerFrontEnd')]"
-                     }
-                  }
-               }
-            ]
-         },
-         "dependsOn":[
-            "[resourceId('Microsoft.Network/publicIPAddresses', 'pip')]"
-         ]
-      },
-      {
-         "type":"Microsoft.Network/publicIPAddresses",
-         "name":"pip",
-         "apiVersion":"2016-03-30",
-         "location":"[resourceGroup().location]",
-         "properties":{
-            "publicIPAllocationMethod":"Dynamic",
-            "idleTimeoutInMinutes":4
-         },
-         "dependsOn":[
-
-         ]
-      },
-      {
+         "apiVersion":"[variables('armApiVersion')]",
          "type":"Microsoft.Network/virtualNetworks",
-         "name":"vnet",
-         "apiVersion":"2016-03-30",
+         "name":"[variables('networkSettings').virtualNetworkName]",
          "location":"[resourceGroup().location]",
          "properties":{
             "addressSpace":{
                "addressPrefixes":[
-                  "10.0.0.0/16"
+                  "[variables('networkSettings').addressPrefix]"
                ]
             },
             "subnets":[
                {
-                  "name":"default",
+                  "name":"[variables('networkSettings').subnet.dse.name]",
                   "properties":{
-                     "addressPrefix":"10.0.0.0/21"
+                     "addressPrefix":"[variables('networkSettings').subnet.dse.prefix]"
                   }
                }
             ]
-         },
+         }
+      },
+      {
+         "type":"Microsoft.Network/publicIPAddresses",
+         "apiVersion":"[variables('armApiVersion')]",
+         "name":"[variables('publicIPAddressName')]",
+         "location":"[resourceGroup().location]",
+         "properties":{
+            "publicIPAllocationMethod":"[variables('publicIPAddressType')]",
+            "dnsSettings":{
+               "domainNameLabel":"[parameters('dnsPrefix')]"
+            }
+         }
+      },
+      {
+         "apiVersion":"[variables('armApiVersion')]",
+         "type":"Microsoft.Network/networkInterfaces",
+         "name":"[variables('nicName')]",
+         "location":"[resourceGroup().location]",
          "dependsOn":[
-
-         ]
+            "[concat('Microsoft.Network/publicIPAddresses/', variables('publicIPAddressName'))]",
+            "[concat('Microsoft.Network/virtualNetworks/', variables('networkSettings').virtualNetworkName)]"
+         ],
+         "properties":{
+            "ipConfigurations":[
+               {
+                  "name":"ipconfig1",
+                  "properties":{
+                     "privateIPAllocationMethod":"Static",
+                     "privateIPAddress":"[variables('networkSettings').statics.master]",
+                     "publicIPAddress":{
+                        "id":"[resourceId('Microsoft.Network/publicIPAddresses',variables('publicIPAddressName'))]"
+                     },
+                     "subnet":{
+                        "id":"[variables('subnetRef')]"
+                     }
+                  }
+               }
+            ]
+         }
+      },
+      {
+         "type":"Microsoft.Compute/disks",
+         "name":"[concat('masterdatadisk', copyindex())]",
+         "apiVersion":"[variables('computeResouresApiVersion')]",
+         "location":"[variables('location')]",
+         "copy":{
+            "name":"foo",
+            "count":"[variables('masterDiskCount')]"
+         },
+         "properties":{
+            "creationData":{
+               "createOption":"Empty"
+            },
+            "accountType":"[variables('storageAccountType')]",
+            "diskSizeGB":"[parameters('dataDiskSize')]"
+         }
+      },
+      {
+         "type":"Microsoft.Compute/disks",
+         "name":"[concat('workerdatadisk', copyindex())]",
+         "apiVersion":"[variables('computeResouresApiVersion')]",
+         "location":"[variables('location')]",
+         "copy":{
+            "name":"foo",
+            "count":"[mul(parameters('workerNodeCount'), variables('workerDiskCount'))]"
+         },
+         "properties":{
+            "creationData":{
+               "createOption":"Empty"
+            },
+            "accountType":"[variables('storageAccountType')]",
+            "diskSizeGB":"[parameters('dataDiskSize')]"
+         }
+      },
+      {
+         "apiVersion":"[variables('armApiVersion')]",
+         "type":"Microsoft.Compute/virtualMachines",
+         "name":"[variables('masterVMName')]",
+         "location":"[resourceGroup().location]",
+         "dependsOn":[
+            "[concat('Microsoft.Network/networkInterfaces/', variables('nicName'))]",
+            "[concat('Microsoft.Compute/availabilitySets/', variables('avSetName'))]"
+         ],
+         "properties":{
+            "availabilitySet":{
+               "id":"[resourceId('Microsoft.Compute/availabilitySets', variables('avSetName'))]"
+            },
+            "hardwareProfile":{
+               "vmSize":"[parameters('headNodeSize')]"
+            },
+            "osProfile":{
+               "computername":"[variables('masterVMName')]",
+               "adminUsername":"[parameters('adminUsername')]",
+               "adminPassword":"[parameters('adminPassword')]"
+            },
+            "storageProfile":{
+               "imageReference":{
+                  "publisher":"[variables('imagePublisher')]",
+                  "offer":"[variables('imageOffer')]",
+                  "sku":"[variables('imageSku')]",
+                  "version":"latest"
+               },
+               "osDisk":{
+                  "name":"osdisk",
+                  "createOption":"FromImage"
+               },
+               "dataDisks":[
+                  {
+                     "lun":1,
+                     "name":"datadisk0",
+                     "createOption":"attach",
+                     "managedDisk":{
+                        "id":"[resourceId('Microsoft.Compute/disks', concat('masterdatadisk', 0))]"
+                     }
+                  },
+                  {
+                     "lun":2,
+                     "name":"datadisk1",
+                     "createOption":"attach",
+                     "managedDisk":{
+                        "id":"[resourceId('Microsoft.Compute/disks', concat('masterdatadisk', 1))]"
+                     }
+                  },
+                  {
+                     "lun":3,
+                     "name":"datadisk2",
+                     "createOption":"attach",
+                     "managedDisk":{
+                        "id":"[resourceId('Microsoft.Compute/disks', concat('masterdatadisk', 2))]"
+                     }
+                  },
+                  {
+                     "lun":4,
+                     "name":"datadisk3",
+                     "createOption":"attach",
+                     "managedDisk":{
+                        "id":"[resourceId('Microsoft.Compute/disks', concat('masterdatadisk', 3))]"
+                     }
+                  }
+               ]
+            },
+            "networkProfile":{
+               "networkInterfaces":[
+                  {
+                     "id":"[resourceId('Microsoft.Network/networkInterfaces',variables('nicName'))]"
+                  }
+               ]
+            }
+         }
+      },
+      {
+         "apiVersion":"[variables('armApiVersion')]",
+         "type":"Microsoft.Compute/virtualMachines/extensions",
+         "name":"[concat(variables('masterVMName'), '/Installation')]",
+         "location":"[resourceGroup().location]",
+         "dependsOn":[
+            "[concat('Microsoft.Compute/virtualMachines/', variables('masterVMName'))]"
+         ],
+         "properties":{
+            "publisher":"Microsoft.OSTCExtensions",
+            "type":"CustomScriptForLinux",
+            "typeHandlerVersion":"1.3",
+            "settings":{
+               "fileUris":[
+                  "[concat(variables('templateBaseUrl'), 'azuredeploy.sh')]"
+               ],
+               "commandToExecute":"[variables('installationCLI')]"
+            }
+         }
+      },
+      {
+         "apiVersion":"[variables('armApiVersion')]",
+         "type":"Microsoft.Compute/virtualMachines/extensions",
+         "name":"[concat(variables('workerVMName'), copyindex(), '/Installation')]",
+         "location":"[resourceGroup().location]",
+         "dependsOn":[
+            "[concat('Microsoft.Compute/virtualMachines/', variables('masterVMName'),'/extensions/Installation')]",
+            "[concat('Microsoft.Compute/virtualMachines/', variables('workerVMName'), copyindex())]"
+         ],
+         "copy":{
+            "name":"foo",
+            "count":"[parameters('workerNodeCount')]"
+         },
+         "properties":{
+            "publisher":"Microsoft.OSTCExtensions",
+            "type":"CustomScriptForLinux",
+            "typeHandlerVersion":"1.3",
+            "settings":{
+               "fileUris":[
+                  "[concat(variables('templateBaseUrl'), 'azuredeploy.sh')]"
+               ],
+               "commandToExecute":"[variables('installationCLI')]"
+            }
+         }
+      },
+      {
+         "apiVersion":"[variables('armApiVersion')]",
+         "type":"Microsoft.Network/networkInterfaces",
+         "name":"[concat(variables('nicName'), 'worker', copyindex())]",
+         "location":"[resourceGroup().location]",
+         "dependsOn":[
+            "[concat('Microsoft.Network/virtualNetworks/', variables('networkSettings').virtualNetworkName)]"
+         ],
+         "copy":{
+            "name":"foo",
+            "count":"[parameters('workerNodeCount')]"
+         },
+         "properties":{
+            "ipConfigurations":[
+               {
+                  "name":"ipconfig1",
+                  "properties":{
+                     "privateIPAllocationMethod":"Static",
+                     "privateIPAddress":"[concat(variables('networkSettings').statics.workerRange.base, copyindex(variables('networkSettings').statics.workerRange.start))]",
+                     "subnet":{
+                        "id":"[variables('subnetRef')]"
+                     }
+                  }
+               }
+            ]
+         }
+      },
+      {
+         "apiVersion":"[variables('armApiVersion')]",
+         "type":"Microsoft.Compute/virtualMachines",
+         "name":"[concat(variables('workerVMName'), copyindex())]",
+         "location":"[resourceGroup().location]",
+         "dependsOn":[
+            "[concat('Microsoft.Network/networkInterfaces/', variables('nicName'), 'worker', copyindex())]",
+            "[concat('Microsoft.Compute/availabilitySets/', variables('avSetName'))]"
+         ],
+         "copy":{
+            "name":"foo",
+            "count":"[parameters('workerNodeCount')]"
+         },
+         "properties":{
+            "availabilitySet":{
+               "id":"[resourceId('Microsoft.Compute/availabilitySets', variables('avSetName'))]"
+            },
+            "hardwareProfile":{
+               "vmSize":"[parameters('workerNodeSize')]"
+            },
+            "osProfile":{
+               "computername":"[concat(variables('workerVMName'), copyindex())]",
+               "adminUsername":"[parameters('adminUsername')]",
+               "adminPassword":"[parameters('adminPassword')]"
+            },
+            "storageProfile":{
+               "imageReference":{
+                  "publisher":"[variables('imagePublisher')]",
+                  "offer":"[variables('imageOffer')]",
+                  "sku":"[variables('imageSku')]",
+                  "version":"latest"
+               },
+               "osDisk":{
+                  "name":"osdisk",
+                  "createOption":"FromImage"
+               },
+               "dataDisks":[
+                  {
+                     "lun":1,
+                     "name":"datadisk0",
+                     "createOption":"attach",
+                     "managedDisk":{
+                        "id":"[resourceId('Microsoft.Compute/disks', concat('workerdatadisk', add(mul(copyindex(), variables('workerDiskCount')), 0)))]"
+                     }
+                  },
+                  {
+                     "lun":2,
+                     "name":"datadisk1",
+                     "createOption":"attach",
+                     "managedDisk":{
+                        "id":"[resourceId('Microsoft.Compute/disks', concat('workerdatadisk', add(mul(copyindex(), variables('workerDiskCount')), 1)))]"
+                     }
+                  },
+                  {
+                     "lun":3,
+                     "name":"datadisk2",
+                     "createOption":"attach",
+                     "managedDisk":{
+                        "id":"[resourceId('Microsoft.Compute/disks', concat('workerdatadisk', add(mul(copyindex(), variables('workerDiskCount')), 2)))]"
+                     }
+                  },
+                  {
+                     "lun":4,
+                     "name":"datadisk3",
+                     "createOption":"attach",
+                     "managedDisk":{
+                        "id":"[resourceId('Microsoft.Compute/disks', concat('workerdatadisk', add(mul(copyindex(), variables('workerDiskCount')), 3)))]"
+                     }
+                  }
+               ]
+            },
+            "networkProfile":{
+               "networkInterfaces":[
+                  {
+                     "id":"[resourceId('Microsoft.Network/networkInterfaces',concat(variables('nicName'), 'worker', copyindex()))]"
+                  }
+               ]
+            }
+         }
       }
    ]
 }
