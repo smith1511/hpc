@@ -120,10 +120,6 @@ EOF
 #
 setup_shares()
 {    
-        if [ "$CLUSTERFS" == "BeeGFS" ]; then
-
-        fi
-        
     if is_master; then
         if [ "$CLUSTERFS" == "BeeGFS" ]; then
             mkdir -p $BEEGFS_METADATA
