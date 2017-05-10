@@ -194,13 +194,13 @@
       },
       "clusterFilesystemLocation":{
          "type":"string",
-         "defaultValue":"/data/beegfs/storage",
+         "defaultValue":"Local",
          "allowedValues":[
-            "/data/beegfs/storage",
-            "/mnt/resource/storage"
+            "Local",
+            "Storage"
          ],
          "metadata":{
-            "description":"Path to use for BeeGFS storage."
+            "description":"Location for cluster filesystem storage blocks, local disk or storage backed disks."
          }
       }
    },

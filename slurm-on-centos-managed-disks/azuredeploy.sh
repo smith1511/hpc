@@ -19,13 +19,19 @@ WORKER_HOSTNAME_PREFIX=$2
 WORKER_COUNT=$3
 TEMPLATE_BASE_URL="$5"
 CLUSTERFS="$6"
-BEEGFS_STORAGE="$7"
+CLUSTERFS_STORAGE="$7"
 LAST_WORKER_INDEX=$(($WORKER_COUNT - 1))
 
+BEEGFS_STORAGE="/mnt/resource/storage"
+if [ "$CLUSTERFS_STORAGE" == "Storage" ]; then
+    BEEGFS_STORAGE="/data/beegfs/storage"
+fi
+
 # Shares
-SHARE_HOME=/share/home
-SHARE_DATA=/share/data
-SHARE_SCRATCH=/share/scratch
+SHARE_ROOT=/share
+SHARE_HOME=$SHARE_ROOT/home
+SHARE_DATA=$SHARE_ROOT/data
+SHARE_SCRATCH=$SHARE_ROOT/scratch
 BEEGFS_METADATA=/data/beegfs/meta
 
 # Munged
@@ -113,27 +119,49 @@ EOF
 # These shares are mounted on all worker nodes.
 #
 setup_shares()
-{
-    mkdir -p $SHARE_HOME
-    mkdir -p $SHARE_DATA
-    mkdir -p $SHARE_SCRATCH
+{    
+        if [ "$CLUSTERFS" == "BeeGFS" ]; then
 
-    if is_master; then
-        mkdir -p $BEEGFS_METADATA
-        setup_data_disks $BEEGFS_METADATA "ext4"
+        fi
         
-        echo "$SHARE_HOME    *(rw,async)" >> /etc/exports
-        echo "$SHARE_DATA    *(rw,async)" >> /etc/exports
-
+    if is_master; then
+        if [ "$CLUSTERFS" == "BeeGFS" ]; then
+            mkdir -p $BEEGFS_METADATA
+            setup_data_disks $BEEGFS_METADATA "ext4"
+            echo "$SHARE_HOME    *(rw,async)" >> /etc/exports
+            echo "$SHARE_DATA    *(rw,async)" >> /etc/exports
+        else
+            mkdir -p $SHARE_ROOT
+            setup_data_disks $SHARE_ROOT "ext4"
+            echo "$SHARE_HOME    *(rw,async)" >> /etc/exports
+            echo "$SHARE_DATA    *(rw,async)" >> /etc/exports
+            echo "$SHARE_SCRATCH    *(rw,async)" >> /etc/exports
+        fi
+        
+        mkdir -p $SHARE_HOME
+        mkdir -p $SHARE_DATA
+        mkdir -p $SHARE_SCRATCH
+        
         systemctl enable rpcbind || echo "Already enabled"
         systemctl enable nfs-server || echo "Already enabled"
         systemctl start rpcbind || echo "Already enabled"
         systemctl start nfs-server || echo "Already enabled"
     else
+        mkdir -p $SHARE_HOME
+        mkdir -p $SHARE_DATA
+        mkdir -p $SHARE_SCRATCH
         mkdir -p $BEEGFS_STORAGE
+        
         setup_data_disks $BEEGFS_STORAGE "xfs"
+            
         echo "master:$SHARE_HOME $SHARE_HOME    nfs4    rw,auto,_netdev 0 0" >> /etc/fstab
         echo "master:$SHARE_DATA $SHARE_DATA    nfs4    rw,auto,_netdev 0 0" >> /etc/fstab
+        
+        if [ "$CLUSTERFS" == "None" ]; then
+            setup_data_disks $BEEGFS_STORAGE "xfs"
+            echo "master:$SHARE_SCRATCH $SHARE_SCRATCH    nfs4    rw,auto,_netdev 0 0" >> /etc/fstab
+        fi
+        
         mount -a
         mount | grep "^master:$SHARE_HOME"
         mount | grep "^master:$SHARE_DATA"
