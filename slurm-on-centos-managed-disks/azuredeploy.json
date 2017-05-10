@@ -2,12 +2,6 @@
    "$schema":"https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
    "contentVersion":"1.0.0.0",
    "parameters":{
-      "dnsPrefix":{
-         "type":"string",
-         "metadata":{
-            "description":"Unique public dns prefix where the master node will be exposed"
-         }
-      },
       "adminUserName":{
          "type":"string",
          "defaultValue":"azureuser",
@@ -219,7 +213,7 @@
       "masterVMName":"master",
       "workerVMName":"worker",
       "armApiVersion":"2015-06-15",
-      "computeResouresApiVersion":"2016-04-30-preview",
+      "computeApiVersion":"2016-04-30-preview",
       "avSetName":"avSet",
       "masterDiskCount":4,
       "workerDiskCount":4,
@@ -251,10 +245,12 @@
       {
          "type":"Microsoft.Compute/availabilitySets",
          "name":"[variables('avSetName')]",
-         "apiVersion":"[variables('armApiVersion')]",
+         "apiVersion":"[variables('computeApiVersion')]",
          "location":"[resourceGroup().location]",
          "properties":{
-
+            "platformFaultDomainCount": "2",
+            "platformUpdateDomainCount": "2",
+            "managed": "true"
          }
       },
       {
@@ -284,10 +280,7 @@
          "name":"[variables('publicIPAddressName')]",
          "location":"[resourceGroup().location]",
          "properties":{
-            "publicIPAllocationMethod":"[variables('publicIPAddressType')]",
-            "dnsSettings":{
-               "domainNameLabel":"[parameters('dnsPrefix')]"
-            }
+            "publicIPAllocationMethod":"[variables('publicIPAddressType')]"
          }
       },
       {
@@ -320,7 +313,7 @@
       {
          "type":"Microsoft.Compute/disks",
          "name":"[concat('masterdatadisk', copyindex())]",
-         "apiVersion":"[variables('computeResouresApiVersion')]",
+         "apiVersion":"[variables('computeApiVersion')]",
          "location":"[resourceGroup().location]",
          "copy":{
             "name":"foo",
@@ -330,14 +323,14 @@
             "creationData":{
                "createOption":"Empty"
             },
-            "accountType":"[variables('storageAccountType')]",
+            "accountType":"[parameters('storageAccountType')]",
             "diskSizeGB":"[parameters('dataDiskSize')]"
          }
       },
       {
          "type":"Microsoft.Compute/disks",
          "name":"[concat('workerdatadisk', copyindex())]",
-         "apiVersion":"[variables('computeResouresApiVersion')]",
+         "apiVersion":"[variables('computeApiVersion')]",
          "location":"[resourceGroup().location]",
          "copy":{
             "name":"foo",
@@ -347,18 +340,22 @@
             "creationData":{
                "createOption":"Empty"
             },
-            "accountType":"[variables('storageAccountType')]",
+            "accountType":"[parameters('storageAccountType')]",
             "diskSizeGB":"[parameters('dataDiskSize')]"
          }
       },
       {
-         "apiVersion":"[variables('armApiVersion')]",
+         "apiVersion":"[variables('computeApiVersion')]",
          "type":"Microsoft.Compute/virtualMachines",
          "name":"[variables('masterVMName')]",
          "location":"[resourceGroup().location]",
          "dependsOn":[
             "[concat('Microsoft.Network/networkInterfaces/', variables('nicName'))]",
-            "[concat('Microsoft.Compute/availabilitySets/', variables('avSetName'))]"
+            "[concat('Microsoft.Compute/availabilitySets/', variables('avSetName'))]",
+            "Microsoft.Compute/disks/masterdatadisk0",
+            "Microsoft.Compute/disks/masterdatadisk1",
+            "Microsoft.Compute/disks/masterdatadisk2",
+            "Microsoft.Compute/disks/masterdatadisk3"
          ],
          "properties":{
             "availabilitySet":{
@@ -380,13 +377,11 @@
                   "version":"latest"
                },
                "osDisk":{
-                  "name":"osdisk",
                   "createOption":"FromImage"
                },
                "dataDisks":[
                   {
                      "lun":1,
-                     "name":"datadisk0",
                      "createOption":"attach",
                      "managedDisk":{
                         "id":"[resourceId('Microsoft.Compute/disks', concat('masterdatadisk', 0))]"
@@ -394,7 +389,6 @@
                   },
                   {
                      "lun":2,
-                     "name":"datadisk1",
                      "createOption":"attach",
                      "managedDisk":{
                         "id":"[resourceId('Microsoft.Compute/disks', concat('masterdatadisk', 1))]"
@@ -402,7 +396,6 @@
                   },
                   {
                      "lun":3,
-                     "name":"datadisk2",
                      "createOption":"attach",
                      "managedDisk":{
                         "id":"[resourceId('Microsoft.Compute/disks', concat('masterdatadisk', 2))]"
@@ -410,7 +403,6 @@
                   },
                   {
                      "lun":4,
-                     "name":"datadisk3",
                      "createOption":"attach",
                      "managedDisk":{
                         "id":"[resourceId('Microsoft.Compute/disks', concat('masterdatadisk', 3))]"
@@ -428,7 +420,7 @@
          }
       },
       {
-         "apiVersion":"[variables('armApiVersion')]",
+         "apiVersion":"[variables('computeApiVersion')]",
          "type":"Microsoft.Compute/virtualMachines/extensions",
          "name":"[concat(variables('masterVMName'), '/Installation')]",
          "location":"[resourceGroup().location]",
@@ -448,7 +440,7 @@
          }
       },
       {
-         "apiVersion":"[variables('armApiVersion')]",
+         "apiVersion":"[variables('computeApiVersion')]",
          "type":"Microsoft.Compute/virtualMachines/extensions",
          "name":"[concat(variables('workerVMName'), copyindex(), '/Installation')]",
          "location":"[resourceGroup().location]",
@@ -500,13 +492,17 @@
          }
       },
       {
-         "apiVersion":"[variables('armApiVersion')]",
+         "apiVersion":"[variables('computeApiVersion')]",
          "type":"Microsoft.Compute/virtualMachines",
          "name":"[concat(variables('workerVMName'), copyindex())]",
          "location":"[resourceGroup().location]",
          "dependsOn":[
             "[concat('Microsoft.Network/networkInterfaces/', variables('nicName'), 'worker', copyindex())]",
-            "[concat('Microsoft.Compute/availabilitySets/', variables('avSetName'))]"
+            "[concat('Microsoft.Compute/availabilitySets/', variables('avSetName'))]",
+            "[concat('Microsoft.Compute/disks/', 'workerdatadisk', add(mul(copyindex(), variables('workerDiskCount')), 0))]",
+            "[concat('Microsoft.Compute/disks/', 'workerdatadisk', add(mul(copyindex(), variables('workerDiskCount')), 1))]",
+            "[concat('Microsoft.Compute/disks/', 'workerdatadisk', add(mul(copyindex(), variables('workerDiskCount')), 2))]",
+            "[concat('Microsoft.Compute/disks/', 'workerdatadisk', add(mul(copyindex(), variables('workerDiskCount')), 3))]"
          ],
          "copy":{
             "name":"foo",
@@ -532,13 +528,11 @@
                   "version":"latest"
                },
                "osDisk":{
-                  "name":"osdisk",
                   "createOption":"FromImage"
                },
                "dataDisks":[
                   {
                      "lun":1,
-                     "name":"datadisk0",
                      "createOption":"attach",
                      "managedDisk":{
                         "id":"[resourceId('Microsoft.Compute/disks', concat('workerdatadisk', add(mul(copyindex(), variables('workerDiskCount')), 0)))]"
@@ -546,7 +540,6 @@
                   },
                   {
                      "lun":2,
-                     "name":"datadisk1",
                      "createOption":"attach",
                      "managedDisk":{
                         "id":"[resourceId('Microsoft.Compute/disks', concat('workerdatadisk', add(mul(copyindex(), variables('workerDiskCount')), 1)))]"
@@ -554,7 +547,6 @@
                   },
                   {
                      "lun":3,
-                     "name":"datadisk2",
                      "createOption":"attach",
                      "managedDisk":{
                         "id":"[resourceId('Microsoft.Compute/disks', concat('workerdatadisk', add(mul(copyindex(), variables('workerDiskCount')), 2)))]"
@@ -562,7 +554,6 @@
                   },
                   {
                      "lun":4,
-                     "name":"datadisk3",
                      "createOption":"attach",
                      "managedDisk":{
                         "id":"[resourceId('Microsoft.Compute/disks', concat('workerdatadisk', add(mul(copyindex(), variables('workerDiskCount')), 3)))]"
