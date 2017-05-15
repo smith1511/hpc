@@ -22,9 +22,10 @@ CLUSTERFS="$6"
 CLUSTERFS_STORAGE="$7"
 LAST_WORKER_INDEX=$(($WORKER_COUNT - 1))
 
-BEEGFS_STORAGE="/mnt/resource/storage"
+# Default to local disk
+CLUSTERFS_STORAGE_PATH="/mnt/resource/storage"
 if [ "$CLUSTERFS_STORAGE" == "Storage" ]; then
-    BEEGFS_STORAGE="/data/beegfs/storage"
+    CLUSTERFS_STORAGE_PATH="/data/beegfs/storage"
 fi
 
 # Shares
@@ -32,7 +33,7 @@ SHARE_ROOT=/share
 SHARE_HOME=$SHARE_ROOT/home
 SHARE_DATA=$SHARE_ROOT/data
 SHARE_SCRATCH=$SHARE_ROOT/scratch
-BEEGFS_METADATA=/data/beegfs/meta
+CLUSTERFS_METADATA_PATH=/data/beegfs/meta
 
 # Munged
 MUNGE_USER=munge
@@ -67,8 +68,16 @@ is_master()
 #
 install_pkgs()
 {
+    if [ -d "/opt/intel/impi" ]; then
+        # We're on the CentOS HPC image and need to freeze the kernel version
+        sed -i 's/^exclude=kernel\*$/#exclude=kernel\*/g' /etc/yum.conf
+    fi
+    
     yum -y install epel-release
-    yum -y install zlib zlib-devel bzip2 bzip2-devel bzip2-libs openssl openssl-devel openssl-libs gcc gcc-c++ nfs-utils rpcbind mdadm wget python-pip kernel kernel-devel openmpi openmpi-devel automake autoconf
+    yum -y install zlib zlib-devel bzip2 bzip2-devel bzip2-libs openssl \
+            openssl-devel openssl-libs gcc gcc-c++ nfs-utils rpcbind mdadm \
+            wget python-pip kernel kernel-devel openmpi openmpi-devel automake \
+            autoconf
 }
 
 # Partitions all data disks attached to the VM and creates
@@ -111,6 +120,17 @@ EOF
     fi
 }
 
+wait_for_nfs()
+{
+    while true; do
+        showmount -e master | grep '^/share/home'
+        if [ $? -eq 0 ]; then
+            break;
+        fi
+        sleep 15
+    done
+}
+
 # Creates and exports two shares on the master nodes:
 #
 # /share/home (for HPC user)
@@ -122,8 +142,8 @@ setup_shares()
 {    
     if is_master; then
         if [ "$CLUSTERFS" == "BeeGFS" ]; then
-            mkdir -p $BEEGFS_METADATA
-            setup_data_disks $BEEGFS_METADATA "ext4"
+            mkdir -p $CLUSTERFS_METADATA_PATH
+            setup_data_disks $CLUSTERFS_METADATA_PATH "ext4"
             echo "$SHARE_HOME    *(rw,async)" >> /etc/exports
             echo "$SHARE_DATA    *(rw,async)" >> /etc/exports
         else
@@ -143,24 +163,30 @@ setup_shares()
         systemctl start rpcbind || echo "Already enabled"
         systemctl start nfs-server || echo "Already enabled"
     else
+    
+        wait_for_nfs
+        
         mkdir -p $SHARE_HOME
         mkdir -p $SHARE_DATA
         mkdir -p $SHARE_SCRATCH
-        mkdir -p $BEEGFS_STORAGE
-        
-        setup_data_disks $BEEGFS_STORAGE "xfs"
             
         echo "master:$SHARE_HOME $SHARE_HOME    nfs4    rw,auto,_netdev 0 0" >> /etc/fstab
         echo "master:$SHARE_DATA $SHARE_DATA    nfs4    rw,auto,_netdev 0 0" >> /etc/fstab
         
         if [ "$CLUSTERFS" == "None" ]; then
-            setup_data_disks $BEEGFS_STORAGE "xfs"
             echo "master:$SHARE_SCRATCH $SHARE_SCRATCH    nfs4    rw,auto,_netdev 0 0" >> /etc/fstab
         fi
+        
+        mkdir -p $CLUSTERFS_STORAGE_PATH
+        setup_data_disks $CLUSTERFS_STORAGE_PATH "xfs"
         
         mount -a
         mount | grep "^master:$SHARE_HOME"
         mount | grep "^master:$SHARE_DATA"
+        
+        if [ "$CLUSTERFS" == "None" ]; then
+            mount | grep "^master:$SHARE_SCRATCH"
+        fi
     fi
 }
 
@@ -171,30 +197,34 @@ setup_shares()
 #
 install_munge()
 {
-    groupadd $MUNGE_GROUP
-
-    useradd -M -c "Munge service account" -g munge -s /usr/sbin/nologin munge
-
-    wget https://github.com/dun/munge/archive/munge-${MUNGE_VERSION}.tar.gz
-
-    tar xvfz munge-$MUNGE_VERSION.tar.gz
-
-    cd munge-munge-$MUNGE_VERSION
-
+    cwd=`pwd`
+    mkdir -p $SHARE_DATA
+    cd $SHARE_DATA
+    
     mkdir -m 700 /etc/munge
     mkdir -m 711 /var/lib/munge
     mkdir -m 700 /var/log/munge
     mkdir -m 755 /var/run/munge
-
-    ./configure -libdir=/usr/lib64 --prefix=/usr --sysconfdir=/etc --localstatedir=/var && make && make install
-
+    
+    groupadd $MUNGE_GROUP
+    useradd -M -c "Munge service account" -g munge -s /usr/sbin/nologin munge
+    
     chown -R munge:munge /etc/munge /var/lib/munge /var/log/munge /var/run/munge
-
+    
     if is_master; then
+        wget https://github.com/dun/munge/archive/munge-${MUNGE_VERSION}.tar.gz
+        tar xvfz munge-$MUNGE_VERSION.tar.gz
+        cd munge-munge-$MUNGE_VERSION
+        ./configure -libdir=/usr/lib64 --prefix=/usr --sysconfdir=/etc --localstatedir=/var
+        make
+        make install
+        
         dd if=/dev/urandom bs=1 count=1024 > /etc/munge/munge.key
-    mkdir -p $SLURM_CONF_DIR
+        mkdir -p $SLURM_CONF_DIR
         cp /etc/munge/munge.key $SLURM_CONF_DIR
     else
+        make install
+        cd munge-munge-$MUNGE_VERSION
         cp $SLURM_CONF_DIR/munge.key /etc/munge/munge.key
     fi
 
@@ -203,7 +233,7 @@ install_munge()
 
     /etc/init.d/munge start
 
-    cd ..
+    cd $cwd
 }
 
 # Installs and configures slurm.conf on the node.
@@ -238,6 +268,10 @@ install_slurm_config()
 #
 install_slurm()
 {
+    cwd=`pwd`
+    mkdir -p $SHARE_DATA
+    cd $SHARE_DATA
+    
     groupadd -g $SLURM_GID $SLURM_GROUP
 
     useradd -M -u $SLURM_UID -c "SLURM service account" -g $SLURM_GROUP -s /usr/sbin/nologin $SLURM_USER
@@ -246,13 +280,15 @@ install_slurm()
 
     chown -R slurm:slurm /var/spool/slurmd /var/run/slurmd /var/run/slurmctld /var/log/slurmd /var/log/slurmctld
 
-    wget https://github.com/SchedMD/slurm/archive/slurm-$SLURM_VERSION.tar.gz
-
-    tar xvfz slurm-$SLURM_VERSION.tar.gz
-
-    cd slurm-slurm-$SLURM_VERSION
-
-    ./configure -libdir=/usr/lib64 --prefix=/usr --sysconfdir=/etc/slurm && make && make install
+    if is_master; then
+        wget https://github.com/SchedMD/slurm/archive/slurm-$SLURM_VERSION.tar.gz
+        tar xvfz slurm-$SLURM_VERSION.tar.gz
+        cd slurm-slurm-$SLURM_VERSION
+        ./configure -libdir=/usr/lib64 --prefix=/usr --sysconfdir=/etc/slurm && make && make install
+    else
+        cd slurm-slurm-$SLURM_VERSION
+        make install
+    fi
 
     install_slurm_config
 
@@ -270,7 +306,7 @@ install_slurm()
         systemctl start slurmd
     fi
 
-    cd ..
+    cd $cwd
 }
 
 # Adds a common HPC user to the node and configures public key SSh auth.
@@ -380,13 +416,13 @@ install_beegfs()
         yum install -y beegfs-mgmtd beegfs-meta
         mkdir -p /data/beegfs/mgmtd
         sed -i 's|^storeMgmtdDirectory.*|storeMgmtdDirectory = /data/beegfs/mgmt|g' /etc/beegfs/beegfs-mgmtd.conf
-        sed -i 's|^storeMetaDirectory.*|storeMetaDirectory = '$BEEGFS_METADATA'|g' /etc/beegfs/beegfs-meta.conf
+        sed -i 's|^storeMetaDirectory.*|storeMetaDirectory = '$CLUSTERFS_METADATA_PATH'|g' /etc/beegfs/beegfs-meta.conf
         sed -i 's/^sysMgmtdHost.*/sysMgmtdHost = '$MASTER_HOSTNAME'/g' /etc/beegfs/beegfs-meta.conf
         /etc/init.d/beegfs-mgmtd start
         /etc/init.d/beegfs-meta start
     else
         yum install -y beegfs-storage
-        sed -i 's|^storeStorageDirectory.*|storeStorageDirectory = '$BEEGFS_STORAGE'|g' /etc/beegfs/beegfs-storage.conf
+        sed -i 's|^storeStorageDirectory.*|storeStorageDirectory = '$CLUSTERFS_STORAGE_PATH'|g' /etc/beegfs/beegfs-storage.conf
         sed -i 's/^sysMgmtdHost.*/sysMgmtdHost = '$MASTER_HOSTNAME'/g' /etc/beegfs/beegfs-storage.conf
         /etc/init.d/beegfs-storage start
     fi
@@ -411,11 +447,8 @@ install_xor()
 
 setup_swap()
 {
-    fallocate -l 5g /mnt/resource/swap
-	chmod 600 /mnt/resource/swap
-	mkswap /mnt/resource/swap
-	swapon /mnt/resource/swap
-	echo "/mnt/resource/swap   none  swap  sw  0 0" >> /etc/fstab
+    sed -i 's|^ResourceDisk.EnableSwap=n|ResourceDisk.EnableSwap=y|g' /etc/waagent.conf
+    sed -i 's|^ResourceDisk.SwapSizeMB=0|ResourceDisk.SwapSizeMB=4096' /etc/waagent.conf
 }
 
 setup_swap
@@ -430,7 +463,8 @@ fi
 install_munge
 install_slurm
 setup_env
-install_easybuild
-install_xor
+#install_easybuild
+#install_xor
+
 shutdown -r +1 &
 exit 0
