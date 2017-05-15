@@ -120,12 +120,22 @@ EOF
     fi
 }
 
-wait_for_nfs()
+wait_for_master_nfs()
 {
     while true; do
         showmount -e master | grep '^/share/home'
         if [ $? -eq 0 ]; then
             break;
+        fi
+        sleep 15
+    done
+}
+
+wait_for_master_slurm_files()
+{
+    while true; do
+        if [ -e "$SLURM_CONF_DIR/munge.key" ] && [ -e "$SLURM_CONF_DIR/slurm.conf" ]; then
+            break
         fi
         sleep 15
     done
@@ -164,7 +174,7 @@ setup_shares()
         systemctl start nfs-server || echo "Already enabled"
     else
     
-        wait_for_nfs
+        wait_for_master_nfs
         
         mkdir -p $SHARE_HOME
         mkdir -p $SHARE_DATA
@@ -197,6 +207,8 @@ setup_shares()
 #
 install_munge()
 {
+    wait_for_master_slurm_files
+
     cwd=`pwd`
     mkdir -p $SHARE_DATA
     cd $SHARE_DATA
