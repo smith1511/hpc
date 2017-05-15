@@ -173,7 +173,6 @@ setup_shares()
         systemctl start rpcbind || echo "Already enabled"
         systemctl start nfs-server || echo "Already enabled"
     else
-    
         wait_for_master_nfs
         
         mkdir -p $SHARE_HOME
@@ -207,8 +206,6 @@ setup_shares()
 #
 install_munge()
 {
-    wait_for_master_slurm_files
-
     cwd=`pwd`
     mkdir -p $SHARE_DATA
     cd $SHARE_DATA
@@ -235,6 +232,7 @@ install_munge()
         mkdir -p $SLURM_CONF_DIR
         cp /etc/munge/munge.key $SLURM_CONF_DIR
     else
+        wait_for_master_slurm_files
         make install
         cd munge-munge-$MUNGE_VERSION
         cp $SLURM_CONF_DIR/munge.key /etc/munge/munge.key
