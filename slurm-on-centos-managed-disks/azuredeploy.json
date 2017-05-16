@@ -248,9 +248,9 @@
          "apiVersion":"[variables('computeApiVersion')]",
          "location":"[resourceGroup().location]",
          "properties":{
-            "platformFaultDomainCount": "2",
-            "platformUpdateDomainCount": "2",
-            "managed": "true"
+            "platformFaultDomainCount":"2",
+            "platformUpdateDomainCount":"2",
+            "managed":"true"
          }
       },
       {
@@ -284,13 +284,40 @@
          }
       },
       {
+         "type":"Microsoft.Network/networkSecurityGroups",
+         "name":"nsg",
+         "apiVersion":"[variables('armApiVersion')]",
+         "location":"[resourceGroup().location]",
+         "properties":{
+            "securityRules":[
+               {
+                  "name":"SSH",
+                  "properties":{
+                     "protocol":"*",
+                     "sourcePortRange":"*",
+                     "destinationPortRange":"22",
+                     "sourceAddressPrefix":"*",
+                     "destinationAddressPrefix":"*",
+                     "access":"Allow",
+                     "priority":100,
+                     "direction":"Inbound"
+                  }
+               }
+            ]
+         },
+         "dependsOn":[
+
+         ]
+      },
+      {
          "apiVersion":"[variables('armApiVersion')]",
          "type":"Microsoft.Network/networkInterfaces",
          "name":"[variables('nicName')]",
          "location":"[resourceGroup().location]",
          "dependsOn":[
             "[concat('Microsoft.Network/publicIPAddresses/', variables('publicIPAddressName'))]",
-            "[concat('Microsoft.Network/virtualNetworks/', variables('networkSettings').virtualNetworkName)]"
+            "[concat('Microsoft.Network/virtualNetworks/', variables('networkSettings').virtualNetworkName)]",
+            "Microsoft.Network/networkSecurityGroups/nsg"
          ],
          "properties":{
             "ipConfigurations":[
@@ -307,7 +334,10 @@
                      }
                   }
                }
-            ]
+            ],
+            "networkSecurityGroup":{
+               "id":"[resourceId('Microsoft.Network/networkSecurityGroups', 'nsg')]"
+            }
          }
       },
       {
