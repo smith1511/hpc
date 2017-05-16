@@ -77,7 +77,7 @@ install_pkgs()
     yum -y install zlib zlib-devel bzip2 bzip2-devel bzip2-libs openssl \
             openssl-devel openssl-libs gcc gcc-c++ nfs-utils rpcbind mdadm \
             wget python-pip kernel kernel-devel openmpi openmpi-devel automake \
-            autoconf
+            autoconf munge munge-libs munge-devel rng-tools
 }
 
 # Partitions all data disks attached to the VM and creates
@@ -131,10 +131,11 @@ wait_for_master_nfs()
     done
 }
 
-wait_for_master_slurm_files()
+wait_for_file()
 {
+    file=$1
     while true; do
-        if [ -e "$SLURM_CONF_DIR/munge.key" ] && [ -e "$SLURM_CONF_DIR/slurm.conf" ]; then
+        if [ -e "$file" ]; then
             break
         fi
         sleep 15
@@ -206,42 +207,23 @@ setup_shares()
 #
 install_munge()
 {
-    cwd=`pwd`
-    mkdir -p $SHARE_DATA
-    cd $SHARE_DATA
-    
-    mkdir -m 700 /etc/munge
-    mkdir -m 711 /var/lib/munge
-    mkdir -m 700 /var/log/munge
-    mkdir -m 755 /var/run/munge
-    
-    groupadd $MUNGE_GROUP
-    useradd -M -c "Munge service account" -g munge -s /usr/sbin/nologin munge
-    
-    chown -R munge:munge /etc/munge /var/lib/munge /var/log/munge /var/run/munge
-    
-    if is_master; then
-        wget https://github.com/dun/munge/archive/munge-${MUNGE_VERSION}.tar.gz
-        tar xvfz munge-$MUNGE_VERSION.tar.gz
-        cd munge-munge-$MUNGE_VERSION
-        ./configure -libdir=/usr/lib64 --prefix=/usr --sysconfdir=/etc --localstatedir=/var
-        make
-        make install
-        
+    if is_master; then        
         dd if=/dev/urandom bs=1 count=1024 > /etc/munge/munge.key
         mkdir -p $SLURM_CONF_DIR
         cp /etc/munge/munge.key $SLURM_CONF_DIR
     else
-        wait_for_master_slurm_files
-        make install
-        cd munge-munge-$MUNGE_VERSION
+        wait_for_file $SLURM_CONF_DIR/munge.key
         cp $SLURM_CONF_DIR/munge.key /etc/munge/munge.key
     fi
 
-    chown munge:munge /etc/munge/munge.key
-    chmod 0400 /etc/munge/munge.key
+    chown -R munge: /etc/munge/ /var/log/munge/
+    chmod 0700 /etc/munge/ /var/log/munge/   
+    
+    chown munge: /etc/munge/munge.key
+    chmod 0400 /etc/munge/munge.key 
 
-    /etc/init.d/munge start
+    systemctl enable munge
+    systemctl start munge
 
     cd $cwd
 }
@@ -267,6 +249,8 @@ install_slurm_config()
         sed 's/__MASTER__/'"$MASTER_HOSTNAME"'/g' |
                 sed 's/__WORKER_HOSTNAME_PREFIX__/'"$WORKER_HOSTNAME_PREFIX"'/g' |
                 sed 's/__LAST_WORKER_INDEX__/'"$LAST_WORKER_INDEX"'/g' > $SLURM_CONF_DIR/slurm.conf
+    else
+        wait_for_file $SLURM_CONF_DIR/slurm.conf
     fi
 
     ln -s $SLURM_CONF_DIR/slurm.conf /etc/slurm/slurm.conf
@@ -278,10 +262,6 @@ install_slurm_config()
 #
 install_slurm()
 {
-    cwd=`pwd`
-    mkdir -p $SHARE_DATA
-    cd $SHARE_DATA
-    
     groupadd -g $SLURM_GID $SLURM_GROUP
 
     useradd -M -u $SLURM_UID -c "SLURM service account" -g $SLURM_GROUP -s /usr/sbin/nologin $SLURM_USER
@@ -290,15 +270,10 @@ install_slurm()
 
     chown -R slurm:slurm /var/spool/slurmd /var/run/slurmd /var/run/slurmctld /var/log/slurmd /var/log/slurmctld
 
-    if is_master; then
-        wget https://github.com/SchedMD/slurm/archive/slurm-$SLURM_VERSION.tar.gz
-        tar xvfz slurm-$SLURM_VERSION.tar.gz
-        cd slurm-slurm-$SLURM_VERSION
-        ./configure -libdir=/usr/lib64 --prefix=/usr --sysconfdir=/etc/slurm && make && make install
-    else
-        cd slurm-slurm-$SLURM_VERSION
-        make install
-    fi
+    wget https://github.com/SchedMD/slurm/archive/slurm-$SLURM_VERSION.tar.gz
+    tar xvfz slurm-$SLURM_VERSION.tar.gz
+    cd slurm-slurm-$SLURM_VERSION
+    ./configure -libdir=/usr/lib64 --prefix=/usr --sysconfdir=/etc/slurm && make && make install
 
     install_slurm_config
 
@@ -315,8 +290,6 @@ install_slurm()
         systemctl enable slurmd
         systemctl start slurmd
     fi
-
-    cd $cwd
 }
 
 # Adds a common HPC user to the node and configures public key SSh auth.
