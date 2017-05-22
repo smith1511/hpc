@@ -73,7 +73,7 @@ install_pkgs()
         # We're on the CentOS HPC image and need to freeze the kernel version
         sed -i 's/^exclude=kernel\*$/#exclude=kernel\*/g' /etc/yum.conf
     fi
-    
+
     yum -y install epel-release
     yum -y install zlib zlib-devel bzip2 bzip2-devel bzip2-libs openssl \
             openssl-devel openssl-libs gcc gcc-c++ nfs-utils rpcbind mdadm \
@@ -151,7 +151,7 @@ wait_for_file()
 # These shares are mounted on all worker nodes.
 #
 setup_shares()
-{    
+{
     if is_master; then
         if [ "$CLUSTERFS" == "BeeGFS" ]; then
             mkdir -p $CLUSTERFS_METADATA_PATH
@@ -165,36 +165,36 @@ setup_shares()
             echo "$SHARE_DATA    *(rw,async)" >> /etc/exports
             echo "$SHARE_SCRATCH    *(rw,async)" >> /etc/exports
         fi
-        
+
         mkdir -p $SHARE_HOME
         mkdir -p $SHARE_DATA
         mkdir -p $SHARE_SCRATCH
-        
+
         systemctl enable rpcbind || echo "Already enabled"
         systemctl enable nfs-server || echo "Already enabled"
         systemctl start rpcbind || echo "Already enabled"
         systemctl start nfs-server || echo "Already enabled"
     else
         wait_for_master_nfs
-        
+
         mkdir -p $SHARE_HOME
         mkdir -p $SHARE_DATA
         mkdir -p $SHARE_SCRATCH
-            
+
         echo "master:$SHARE_HOME $SHARE_HOME    nfs4    rw,auto,_netdev 0 0" >> /etc/fstab
         echo "master:$SHARE_DATA $SHARE_DATA    nfs4    rw,auto,_netdev 0 0" >> /etc/fstab
-        
+
         if [ "$CLUSTERFS" == "None" ]; then
             echo "master:$SHARE_SCRATCH $SHARE_SCRATCH    nfs4    rw,auto,_netdev 0 0" >> /etc/fstab
         fi
-        
+
         mkdir -p $CLUSTERFS_STORAGE_PATH
         setup_data_disks $CLUSTERFS_STORAGE_PATH "xfs"
-        
+
         mount -a
         mount | grep "^master:$SHARE_HOME"
         mount | grep "^master:$SHARE_DATA"
-        
+
         if [ "$CLUSTERFS" == "None" ]; then
             mount | grep "^master:$SHARE_SCRATCH"
         fi
@@ -208,7 +208,7 @@ setup_shares()
 #
 install_munge()
 {
-    if is_master; then        
+    if is_master; then
         dd if=/dev/urandom bs=1 count=1024 > /etc/munge/munge.key
         mkdir -p $SLURM_CONF_DIR
         cp /etc/munge/munge.key $SLURM_CONF_DIR
@@ -218,10 +218,10 @@ install_munge()
     fi
 
     chown -R munge: /etc/munge/ /var/log/munge/
-    chmod 0700 /etc/munge/ /var/log/munge/   
-    
+    chmod 0700 /etc/munge/ /var/log/munge/
+
     chown munge: /etc/munge/munge.key
-    chmod 0400 /etc/munge/munge.key 
+    chmod 0400 /etc/munge/munge.key
 
     systemctl enable munge
     systemctl start munge
@@ -246,10 +246,14 @@ install_slurm_config()
             wget "$TEMPLATE_BASE_URL/slurm.template.conf"
         fi
 
+        cpuCount="`nproc`"
+
         cat slurm.template.conf |
         sed 's/__MASTER__/'"$MASTER_HOSTNAME"'/g' |
                 sed 's/__WORKER_HOSTNAME_PREFIX__/'"$WORKER_HOSTNAME_PREFIX"'/g' |
-                sed 's/__LAST_WORKER_INDEX__/'"$LAST_WORKER_INDEX"'/g' > $SLURM_CONF_DIR/slurm.conf
+                sed 's/__LAST_WORKER_INDEX__/'"$LAST_WORKER_INDEX"'/g' |
+                sed 's/__CPU_COUNT__/'"$cpuCount"'/g' > $SLURM_CONF_DIR/slurm.conf
+
     else
         wait_for_file $SLURM_CONF_DIR/slurm.conf
     fi
@@ -302,21 +306,21 @@ setup_hpc_user()
     # disable selinux
     sed -i 's/enforcing/disabled/g' /etc/selinux/config
     setenforce permissive
-    
+
     groupadd -g $HPC_GID $HPC_GROUP
 
     # Don't require password for HPC user sudo
     echo "$HPC_USER ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
-    
+
     # Disable tty requirement for sudo
     sed -i 's/^Defaults[ ]*requiretty/# Defaults requiretty/g' /etc/sudoers
 
     if is_master; then
-    
+
         useradd -c "HPC User" -g $HPC_GROUP -m -d $SHARE_HOME/$HPC_USER -s /bin/bash -u $HPC_UID $HPC_USER
 
         mkdir -p $SHARE_HOME/$HPC_USER/.ssh
-        
+
         # Configure public key auth for the HPC user
         ssh-keygen -t rsa -f $SHARE_HOME/$HPC_USER/.ssh/id_rsa -q -P ""
         cat $SHARE_HOME/$HPC_USER/.ssh/id_rsa.pub > $SHARE_HOME/$HPC_USER/.ssh/authorized_keys
@@ -335,13 +339,13 @@ setup_hpc_user()
         chmod 644 $SHARE_HOME/$HPC_USER/.ssh/authorized_keys
         chmod 600 $SHARE_HOME/$HPC_USER/.ssh/id_rsa
         chmod 644 $SHARE_HOME/$HPC_USER/.ssh/id_rsa.pub
-        
+
         # Give hpc user access to data share
         chown $HPC_USER:$HPC_GROUP $SHARE_DATA
     else
         useradd -c "HPC User" -g $HPC_GROUP -d $SHARE_HOME/$HPC_USER -s /bin/bash -u $HPC_UID $HPC_USER
     fi
-    
+
     chown $HPC_USER:$HPC_GROUP $SHARE_SCRATCH
 }
 
@@ -360,42 +364,18 @@ setup_env()
     echo "export I_MPI_DYNAMIC_CONNECTION=0" >> /etc/profile.d/mpi.sh
 }
 
-install_easybuild()
-{
-    yum -y install Lmod python-devel python-pip gcc gcc-c++ patch unzip tcl tcl-devel libibverbs libibverbs-devel
-    pip install vsc-base
-
-    EASYBUILD_HOME=$SHARE_HOME/$HPC_USER/EasyBuild
-
-    if is_master; then
-        su - $HPC_USER -c "pip install --install-option --prefix=$EASYBUILD_HOME https://github.com/hpcugent/easybuild-framework/archive/easybuild-framework-v2.5.0.tar.gz"
-
-        # Add Lmod to the HPC users path
-        echo 'export PATH=/usr/lib64/openmpi/bin:/usr/share/lmod/6.0.15/libexec:$PATH' >> $SHARE_HOME/$HPC_USER/.bashrc
-
-        # Setup Easybuild configuration and paths
-        echo 'export PATH=$HOME/EasyBuild/bin:$PATH' >> $SHARE_HOME/$HPC_USER/.bashrc
-        echo 'export PYTHONPATH=$HOME/EasyBuild/lib/python2.7/site-packages:$PYTHONPATH' >> $SHARE_HOME/$HPC_USER/.bashrc
-        echo "export MODULEPATH=$EASYBUILD_HOME/modules/all" >> $SHARE_HOME/$HPC_USER/.bashrc
-        echo "export EASYBUILD_MODULES_TOOL=Lmod" >> $SHARE_HOME/$HPC_USER/.bashrc
-        echo "export EASYBUILD_INSTALLPATH=$EASYBUILD_HOME" >> $SHARE_HOME/$HPC_USER/.bashrc
-        echo "export EASYBUILD_DEBUG=1" >> $SHARE_HOME/$HPC_USER/.bashrc
-        echo "source /usr/share/lmod/6.0.15/init/bash" >> $SHARE_HOME/$HPC_USER/.bashrc
-    fi
-}
-
 install_beegfs()
-{    
+{
     wget -O beegfs-rhel7.repo http://www.beegfs.com/release/latest-stable/dists/beegfs-rhel7.repo
     mv beegfs-rhel7.repo /etc/yum.repos.d/beegfs.repo
     rpm --import http://www.beegfs.com/release/latest-stable/gpg/RPM-GPG-KEY-beegfs
-    
+
     yum install -y beegfs-client beegfs-helperd beegfs-utils
-    
+
     sed -i 's/^sysMgmtdHost.*/sysMgmtdHost = '$MASTER_HOSTNAME'/g' /etc/beegfs/beegfs-client.conf
     sed -i  's/Type=oneshot.*/Type=oneshot\nRestart=always\nRestartSec=5/g' /etc/systemd/system/multi-user.target.wants/beegfs-client.service
     echo "$SHARE_SCRATCH /etc/beegfs/beegfs-client.conf" > /etc/beegfs/beegfs-mounts.conf
-    
+
     if is_master; then
         yum install -y beegfs-mgmtd beegfs-meta
         mkdir -p /data/beegfs/mgmtd
@@ -410,23 +390,8 @@ install_beegfs()
         sed -i 's/^sysMgmtdHost.*/sysMgmtdHost = '$MASTER_HOSTNAME'/g' /etc/beegfs/beegfs-storage.conf
         /etc/init.d/beegfs-storage start
     fi
-    
-    systemctl daemon-reload
-}
 
-install_xor()
-{
-    if is_master; then
-        cd $SHARE_HOME/$HPC_USER
-        mkdir IOR-2.10.3
-	    cd IOR-2.10.3
-	    wget http://www.nersc.gov/assets/Trinity--NERSC-8-RFP/Benchmarks/July12/IOR-July12.tar
-	    tar xvf IOR-July12.tar
-	    cd src/C
-    	make mpiio
-    	cd $SHARE_HOME/$HPC_USER
-	    chown -R $HPC_USER:$HPC_GROUP IOR-2.10.3
-	fi
+    systemctl daemon-reload
 }
 
 setup_swap()
@@ -461,8 +426,6 @@ fi
 install_munge
 install_slurm
 setup_env
-#install_easybuild
-#install_xor
 custom_script
 shutdown -r +1 &
 exit 0
