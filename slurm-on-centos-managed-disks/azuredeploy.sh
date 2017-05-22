@@ -8,8 +8,8 @@ if [[ $(id -u) -ne 0 ]] ; then
     exit 1
 fi
 
-if [ $# != 7 ]; then
-    echo "Usage: $0 <MasterHostname> <WorkerHostnamePrefix> <WorkerNodeCount> <HPCUserName> <TemplateBaseUrl> <ClusterFilesystem> <BeeGFSStoragePath>"
+if [ $# -lt 7 ] || [ $# -gt 8 ]; then
+    echo "Usage: $0 <MasterHostname> <WorkerHostnamePrefix> <WorkerNodeCount> <HPCUserName> <TemplateBaseUrl> <ClusterFilesystem> <BeeGFSStoragePath> <OptionalCustomScriptUrl>"
     exit 1
 fi
 
@@ -20,6 +20,7 @@ WORKER_COUNT=$3
 TEMPLATE_BASE_URL="$5"
 CLUSTERFS="$6"
 CLUSTERFS_STORAGE="$7"
+CUSTOM_SCRIPT_URL="$8"
 LAST_WORKER_INDEX=$(($WORKER_COUNT - 1))
 
 # Default to local disk
@@ -434,6 +435,20 @@ setup_swap()
     sed -i 's|^ResourceDisk.SwapSizeMB=0|ResourceDisk.SwapSizeMB=4096' /etc/waagent.conf
 }
 
+custom_script()
+{
+    if [ -n "$CUSTOM_SCRIPT_URL" ]; then
+        mkdir custom_script
+        cd custom_script
+        filename="`echo "${CUSTOM_SCRIPT_URL##*/}" | cut -d? -f1`"
+        wget -O $filename "$CUSTOM_SCRIPT_URL"
+        chmod +x $filename
+        ./$filename
+        cd ..
+        return $?
+    fi
+}
+
 setup_swap
 install_pkgs
 setup_shares
@@ -448,6 +463,6 @@ install_slurm
 setup_env
 #install_easybuild
 #install_xor
-
+custom_script
 shutdown -r +1 &
 exit 0

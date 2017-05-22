@@ -202,6 +202,13 @@
          "metadata":{
             "description":"Location for cluster filesystem storage blocks, local disk or storage backed disks."
          }
+      },
+      "customScriptUrl":{
+         "type":"string",
+         "defaultValue":"",
+         "metadata":{
+            "description":"Optional URL to custom setup script."
+         }
       }
    },
    "variables":{
@@ -239,7 +246,7 @@
       "vnetID":"[resourceId('Microsoft.Network/virtualNetworks',variables('networkSettings').virtualNetworkName)]",
       "subnetRef":"[concat(variables('vnetID'),'/subnets/',variables('networkSettings').subnet.dse.name)]",
       "templateBaseUrl":"https://raw.githubusercontent.com/smith1511/hpc/master/slurm-on-centos-managed-disks/",
-      "installationCLI":"[concat('bash azuredeploy.sh ', variables('masterVMName'), ' ', variables('workerVMName'), ' ', parameters('workerNodeCount'), ' ', parameters('hpcUserName'), ' ', variables('templateBaseUrl'), ' ', parameters('installClusterFilesystem'), ' ', parameters('clusterFilesystemLocation'))]"
+      "installationCLI":"[concat('bash azuredeploy.sh ', variables('masterVMName'), ' ', variables('workerVMName'), ' ', parameters('workerNodeCount'), ' ', parameters('hpcUserName'), ' ', variables('templateBaseUrl'), ' ', parameters('installClusterFilesystem'), ' ', parameters('clusterFilesystemLocation'), ' ', parameters('customScriptUrl'))]"
    },
    "resources":[
       {
