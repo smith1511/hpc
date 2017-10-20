@@ -8,8 +8,8 @@ if [[ $(id -u) -ne 0 ]] ; then
     exit 1
 fi
 
-if [ $# != 6 ]; then
-    echo "Usage: $0 <MasterHostname> <WorkerHostnamePrefix> <WorkerNodeCount> <HPCUserName> <TemplateBaseUrl> <BeeGFSStoragePath>"
+if [ $# != 7 ]; then
+    echo "Usage: $0 <MasterHostname> <WorkerHostnamePrefix> <WorkerNodeCount> <HPCUserName> <TemplateBaseUrl> <BeeGFSStoragePath> <ImageOffer>"
     exit 1
 fi
 
@@ -19,6 +19,7 @@ WORKER_HOSTNAME_PREFIX=$2
 WORKER_COUNT=$3
 TEMPLATE_BASE_URL="$5"
 BEEGFS_STORAGE="$6"
+IMAGE_OFFER="$7"
 LAST_WORKER_INDEX=$(($WORKER_COUNT - 1))
 
 # Shares
@@ -60,8 +61,33 @@ is_master()
 #
 install_pkgs()
 {
-    yum -y install epel-release
-    yum -y install zlib zlib-devel bzip2 bzip2-devel bzip2-libs openssl openssl-devel openssl-libs gcc gcc-c++ nfs-utils rpcbind mdadm wget python-pip kernel kernel-devel openmpi openmpi-devel automake autoconf
+    echo $IMAGE_OFFER | grep -q "-HPC"
+    if [ $? -eq 0 ]; then
+        rpm --rebuilddb
+        updatedb
+        yum clean all
+        yum -y install epel-release
+        #yum --exclude WALinuxAgent,intel-*,kernel*,*microsoft-*,msft-* -y update
+
+        sed -i.bak -e '28d' /etc/yum.conf
+        sed -i '28i#exclude=kernel*' /etc/yum.conf
+
+        yum -y install zlib zlib-devel bzip2 bzip2-devel bzip2-libs openssl openssl-devel openssl-libs \
+            nfs-utils rpcbind git libicu libicu-devel make zip unzip mdadm wget gsl bc rpm-build  \
+            readline-devel pam-devel libXtst.i686 libXtst.x86_64 make.x86_64 sysstat.x86_64 python-pip automake autoconf \
+            binutils.x86_64 compat-libcap1.x86_64 glibc.i686 glibc.x86_64 \
+            ksh compat-libstdc++-33 libaio.i686 libaio.x86_64 libaio-devel.i686 libaio-devel.x86_64 \
+            libgcc.i686 libgcc.x86_64 libstdc++.i686 libstdc++.x86_64 libstdc++-devel.i686 libstdc++-devel.x86_64 \
+            libXi.i686 libXi.x86_64 gcc gcc-c++ gcc.x86_64 gcc-c++.x86_64 glibc-devel.i686 glibc-devel.x86_64 libtool libxml2-devel
+
+        sed -i.bak -e '28d' /etc/yum.conf
+        sed -i '28iexclude=kernel*' /etc/yum.conf
+    else
+        yum -y install epel-release
+        yum -y install zlib zlib-devel bzip2 bzip2-devel bzip2-libs openssl openssl-devel openssl-libs \
+            gcc gcc-c++ nfs-utils rpcbind mdadm wget python-pip kernel kernel-devel \
+            openmpi openmpi-devel automake autoconf
+    fi
 }
 
 # Partitions all data disks attached to the VM and creates
