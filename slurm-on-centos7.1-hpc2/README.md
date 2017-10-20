@@ -52,6 +52,12 @@ The master also exports a generic data share under /share/data.  This share is m
 
 ### Running a SLURM job
 
+First you'll need to set the worker nodes to IDLE as they were rebooted during the creation process.  To do this execute:
+
+```
+hpc@master:~> sudo scontrol update NodeName=worker[0-9] State=IDLE
+```
+
 To verify that SLURM is configured and running as expected you can execute the following.
 
 ```

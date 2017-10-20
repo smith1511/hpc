@@ -28,12 +28,14 @@
             "description":"User for running HPC applications with shared home directory and SSH public key authentication setup.  This user cannot login from outside the cluster. Pick a valid username otherwise there will be a BadRequest error."
          }
       },
-      "imageOffer":{
+      "image":{
          "type":"string",
-         "defaultValue":"CentOS-HPC",
+         "defaultValue":"OpenLogic:CentOS-HPC:7.3",
          "allowedValues":[
-            "CentOS",
-            "CentOS-HPC"
+            "OpenLogic:CentOS-HPC:7.1",
+            "OpenLogic:CentOS-HPC:7.3",
+            "OpenLogic:CentOS:7.1",
+            "OpenLogic:CentOS:7.3"
          ],
          "metadata":{
             "description":"The OS image offer to use, eithe HPC with Intel MPI or the vanilla CentOS version."
@@ -178,9 +180,9 @@
       }
    },
    "variables":{
-      "imagePublisher":"OpenLogic",
-      "imageOffer":"[parameters('imageOffer')]",
-      "imageSku":"7.1",
+      "imagePublisher":"[split(parameters('image'), ':')[0]]",
+      "imageOffer":"[split(parameters('image'), ':')[1]]",
+      "imageSku":"[split(parameters('image'), ':')[2]]",
       "newStorageAccountName":"[concat(uniqueString(resourceGroup().id), 'sa')]",
       "vmStorageAccountContainerName":"vhd",
       "OSDiskName":"osdisk",
@@ -212,7 +214,7 @@
       "vnetID":"[resourceId('Microsoft.Network/virtualNetworks',variables('networkSettings').virtualNetworkName)]",
       "subnetRef":"[concat(variables('vnetID'),'/subnets/',variables('networkSettings').subnet.dse.name)]",
       "templateBaseUrl":"https://raw.githubusercontent.com/smith1511/hpc/master/slurm-on-centos7.1-hpc/",
-      "installationCLI":"[concat('bash azuredeploy.sh ', variables('masterVMName'), ' ', variables('workerVMName'), ' ', parameters('workerNodeCount'), ' ', parameters('hpcUserName'), ' ', variables('templateBaseUrl'))]",
+      "installationCLI":"[concat('bash azuredeploy.sh ', variables('masterVMName'), ' ', variables('workerVMName'), ' ', parameters('workerNodeCount'), ' ', parameters('hpcUserName'), ' ', variables('templateBaseUrl'), ' ', variables('imageOffer'))]",
       "storageAccountType":"Standard_LRS"
    },
    "resources":[

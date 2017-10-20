@@ -28,12 +28,14 @@
             "description":"User for running HPC applications with shared home directory and SSH public key authentication setup.  This user cannot login from outside the cluster. Pick a valid username otherwise there will be a BadRequest error."
          }
       },
-      "imageOffer":{
+      "image":{
          "type":"string",
-         "defaultValue":"CentOS-HPC",
+         "defaultValue":"OpenLogic:CentOS-HPC:7.3",
          "allowedValues":[
-            "CentOS",
-            "CentOS-HPC"
+            "OpenLogic:CentOS-HPC:7.1",
+            "OpenLogic:CentOS-HPC:7.3",
+            "OpenLogic:CentOS:7.1",
+            "OpenLogic:CentOS:7.3"
          ],
          "metadata":{
             "description":"The OS image offer to use, eithe HPC with Intel MPI or the vanilla CentOS version."
@@ -219,9 +221,9 @@
       }
    },
    "variables":{
-      "imagePublisher":"OpenLogic",
-      "imageOffer":"[parameters('imageOffer')]",
-      "imageSku":"7.1",
+      "imagePublisher":"[split(parameters('image'), ':')[0]]",
+      "imageOffer":"[split(parameters('image'), ':')[1]]",
+      "imageSku":"[split(parameters('image'), ':')[2]]",
       "newStorageAccountName":"[concat(uniqueString(resourceGroup().id), 'sa')]",
       "storageAccountName1":"[concat(uniqueString('1', resourceGroup().id), 'sa')]",
       "storageAccountName2":"[concat(uniqueString('2', resourceGroup().id), 'sa')]",
@@ -257,7 +259,7 @@
       "vnetID":"[resourceId('Microsoft.Network/virtualNetworks',variables('networkSettings').virtualNetworkName)]",
       "subnetRef":"[concat(variables('vnetID'),'/subnets/',variables('networkSettings').subnet.dse.name)]",
       "templateBaseUrl":"https://raw.githubusercontent.com/smith1511/hpc/master/slurm-on-centos7.1-hpc2/",
-      "installationCLI":"[concat('bash azuredeploy.sh ', variables('masterVMName'), ' ', variables('workerVMName'), ' ', parameters('workerNodeCount'), ' ', parameters('hpcUserName'), ' ', variables('templateBaseUrl'), ' ', parameters('clusterFilesystemLocation'))]"
+      "installationCLI":"[concat('bash azuredeploy.sh ', variables('masterVMName'), ' ', variables('workerVMName'), ' ', parameters('workerNodeCount'), ' ', parameters('hpcUserName'), ' ', variables('templateBaseUrl'), ' ', parameters('clusterFilesystemLocation'), ' ', variables('imageOffer'))]"
    },
    "resources":[
       {
