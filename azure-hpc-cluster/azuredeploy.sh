@@ -137,6 +137,9 @@ EOF
             mkfs -t $filesystem /dev/md10
             echo "/dev/md10 $mountPoint $filesystem defaults,nofail 0 2" >> /etc/fstab
         fi
+        
+        sleep 30
+        
         mount /dev/md10
     fi
 }
@@ -162,7 +165,6 @@ setup_shares()
         fi
 
         echo "$SHARE_NFS    *(rw,async)" >> /etc/exports
-
         systemctl enable rpcbind || echo "Already enabled"
         systemctl enable nfs-server || echo "Already enabled"
         systemctl start rpcbind || echo "Already enabled"
