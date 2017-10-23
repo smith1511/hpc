@@ -72,7 +72,7 @@ is_master()
 #
 install_pkgs()
 {
-    echo $IMAGE_OFFER | grep -q "-HPC"
+    echo "$IMAGE_OFFER" | grep -q 'HPC$'
     if [ $? -eq 0 ]; then
         rpm --rebuilddb
         updatedb
@@ -89,7 +89,7 @@ install_pkgs()
             binutils.x86_64 compat-libcap1.x86_64 glibc.i686 glibc.x86_64 \
             ksh compat-libstdc++-33 libaio.i686 libaio.x86_64 libaio-devel.i686 libaio-devel.x86_64 \
             libgcc.i686 libgcc.x86_64 libstdc++.i686 libstdc++.x86_64 libstdc++-devel.i686 libstdc++-devel.x86_64 \
-            libXi.i686 libXi.x86_64 gcc gcc-c++ gcc.x86_64 gcc-c++.x86_64 glibc-devel.i686 glibc-devel.x86_64 libtool libxml2-devel
+            libXi.i686 libXi.x86_64 gcc gcc-c++ gcc.x86_64 gcc-c++.x86_64 glibc-devel.i686 glibc-devel.x86_64 libtool libxml2-devel mpich-3.2 mpich-3.2-devel
 
         sed -i.bak -e '28d' /etc/yum.conf
         sed -i '28iexclude=kernel*' /etc/yum.conf
@@ -97,7 +97,7 @@ install_pkgs()
         yum -y install epel-release
         yum -y install zlib zlib-devel bzip2 bzip2-devel bzip2-libs openssl openssl-devel openssl-libs \
             gcc gcc-c++ nfs-utils rpcbind mdadm wget python-pip kernel kernel-devel \
-            openmpi openmpi-devel automake autoconf
+            mpich-3.2 mpich-3.2-devel automake autoconf
     fi
 }
 
@@ -389,6 +389,7 @@ setup_hpc_user()
     sed -i 's/^Defaults[ ]*requiretty/# Defaults requiretty/g' /etc/sudoers
 
     if is_master; then
+        mkdir -p $SHARE_HOME
 
         useradd -c "HPC User" -g $HPC_GROUP -m -d $SHARE_HOME/$HPC_USER -s /bin/bash -u $HPC_UID $HPC_USER
 
@@ -513,11 +514,7 @@ install_xor()
 
 setup_swap()
 {
-    fallocate -l 5g /mnt/resource/swap
-	chmod 600 /mnt/resource/swap
-	mkswap /mnt/resource/swap
-	swapon /mnt/resource/swap
-	echo “/mnt/resource/swap   none  swap  sw  0 0” >> /etc/fstab
+    echo "Ignore for now..."
 }
 
 setup_swap
