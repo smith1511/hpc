@@ -50,6 +50,7 @@
          "type":"string",
          "defaultValue":"Standard_H8",
          "allowedValues":[
+            "Standard_A2",
             "Standard_A4",
             "Standard_A7",
             "Standard_A8",
@@ -107,7 +108,6 @@
          "type":"string",
          "defaultValue":"Standard_H16",
          "allowedValues":[
-            "Standard_A1",
             "Standard_A2",
             "Standard_A3",
             "Standard_A4",
