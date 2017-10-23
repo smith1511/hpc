@@ -2,7 +2,7 @@
 Description=Slurm node daemon
 After=network.target syslog.target munge.service nfs-mountd.service
 Requires=munge.service
-RequiresMountsFor=/share/data
+RequiresMountsFor=/share/nfs
 ConditionPathExists=/etc/slurm/slurm.conf
 
 [Service]
