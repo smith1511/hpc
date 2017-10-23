@@ -20,7 +20,7 @@ WORKER_COUNT=$3
 TEMPLATE_BASE_URL="$5"
 CFS="$6" # None, BeeGFS
 CFS_STORAGE="$7" # None,Storage,SSD
-CFS_STORAGE_LOCATION="/mnt/resource/storage"
+CFS_STORAGE_LOCATION="/data/beegfs/storage"
 IMAGE_OFFER="$8"
 SCHEDULER="$9"
 INSTALL_EASYBUILD="$10"
@@ -33,9 +33,10 @@ elif [ "$CFS_STORAGE" == "SSD" ]; then
 fi
 
 # Shares
-SHARE_HOME=/share/home
-SHARE_DATA=/share/data
-SHARE_SCRATCH=/share/scratch
+SHARE_NFS=/share/nfs
+SHARE_HOME=$SHARE_NFS/home
+SHARE_DATA=$SHARE_NFS/data
+SHARE_CFS=/share/cfs
 BEEGFS_METADATA=/data/beegfs/meta
 
 # Munged
@@ -149,29 +150,35 @@ EOF
 #
 setup_shares()
 {
-    mkdir -p $SHARE_HOME
+    mkdir -p $SHARE_NFS
     mkdir -p $SHARE_DATA
-    mkdir -p $SHARE_SCRATCH
+    mkdir -p $SHARE_CFS
 
     if is_master; then
-        mkdir -p $BEEGFS_METADATA
-        setup_data_disks $BEEGFS_METADATA "ext4"
-        
-        echo "$SHARE_HOME    *(rw,async)" >> /etc/exports
-        echo "$SHARE_DATA    *(rw,async)" >> /etc/exports
+        if [ "$CFS" == "BeeGFS" ]; then
+            mkdir -p $BEEGFS_METADATA
+            setup_data_disks $BEEGFS_METADATA "ext4"
+        else
+            setup_data_disks $SHARE_NFS "ext4"
+        fi
+
+        echo "$SHARE_NFS    *(rw,async)" >> /etc/exports
 
         systemctl enable rpcbind || echo "Already enabled"
         systemctl enable nfs-server || echo "Already enabled"
         systemctl start rpcbind || echo "Already enabled"
         systemctl start nfs-server || echo "Already enabled"
     else
-        mkdir -p $CFS_STORAGE_LOCATION
-        setup_data_disks $CFS_STORAGE_LOCATION "xfs"
-        echo "master:$SHARE_HOME $SHARE_HOME    nfs4    rw,auto,_netdev 0 0" >> /etc/fstab
-        echo "master:$SHARE_DATA $SHARE_DATA    nfs4    rw,auto,_netdev 0 0" >> /etc/fstab
+        if [ "$CFS_STORAGE" == "Storage" ]; then
+            # Format CFS mount point
+            mkdir -p $CFS_STORAGE_LOCATION
+            setup_data_disks $CFS_STORAGE_LOCATION "xfs"
+        fi
+
+        # Mount master NFS share
+        echo "master:$SHARE_NFS $SHARE_NFS    nfs4    rw,auto,_netdev 0 0" >> /etc/fstab
         mount -a
         mount | grep "^master:$SHARE_HOME"
-        mount | grep "^master:$SHARE_DATA"
     fi
 }
 
@@ -203,7 +210,7 @@ install_munge()
 
     if is_master; then
         dd if=/dev/urandom bs=1 count=1024 > /etc/munge/munge.key
-    mkdir -p $SLURM_CONF_DIR
+        mkdir -p $SLURM_CONF_DIR
         cp /etc/munge/munge.key $SLURM_CONF_DIR
     else
         cp $SLURM_CONF_DIR/munge.key /etc/munge/munge.key
@@ -296,18 +303,18 @@ install_pbsoss()
       tk-devel swig expat-devel openssl-devel libXext libXft \
       autoconf automake expat libedit postgresql-server python \
       sendmail tcl tk libical perl-Env perl-Switch
-    
+
     # Required on 7.2 as the libical lib changed
     ln -s /usr/lib64/libical.so.1 /usr/lib64/libical.so.0
-    
+
     wget http://wpc.23a7.iotacdn.net/8023A7/origin2/rl/PBS-Open/CentOS_7.zip
     unzip CentOS_7.zip
     cd CentOS_7
     rpm -ivh --nodeps pbspro-server-14.1.0-13.1.x86_64.rpm
-    
+
     echo 'export PATH=/opt/pbs/default/bin:$PATH' >> /etc/profile.d/pbs.sh
     echo 'export PATH=/opt/pbs/default/sbin:$PATH' >> /etc/profile.d/pbs.sh
-    
+
     if is_master; then
         cat > /etc/pbs.conf << EOF
 PBS_SERVER=$MASTER_HOSTNAME
@@ -320,14 +327,14 @@ PBS_HOME=/var/spool/pbs
 PBS_CORE_LIMIT=unlimited
 PBS_SCP=/bin/scp
 EOF
-    
+
         /etc/init.d/pbs start
 
         for i in $(seq 0 $LAST_WORKER_INDEX); do
             nodeName=${WORKER_HOSTNAME_PREFIX}${i}
             /opt/pbs/bin/qmgr -c "c n $nodeName"
         done
-        
+
         # Enable job history
         /opt/pbs/bin/qmgr -c "s s job_history_enable = true"
         /opt/pbs/bin/qmgr -c "s s job_history_duration = 336:0:0"
@@ -372,21 +379,21 @@ setup_hpc_user()
     # disable selinux
     sed -i 's/enforcing/disabled/g' /etc/selinux/config
     setenforce permissive
-    
+
     groupadd -g $HPC_GID $HPC_GROUP
 
     # Don't require password for HPC user sudo
     echo "$HPC_USER ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
-    
+
     # Disable tty requirement for sudo
     sed -i 's/^Defaults[ ]*requiretty/# Defaults requiretty/g' /etc/sudoers
 
     if is_master; then
-    
+
         useradd -c "HPC User" -g $HPC_GROUP -m -d $SHARE_HOME/$HPC_USER -s /bin/bash -u $HPC_UID $HPC_USER
 
         mkdir -p $SHARE_HOME/$HPC_USER/.ssh
-        
+
         # Configure public key auth for the HPC user
         ssh-keygen -t rsa -f $SHARE_HOME/$HPC_USER/.ssh/id_rsa -q -P ""
         cat $SHARE_HOME/$HPC_USER/.ssh/id_rsa.pub > $SHARE_HOME/$HPC_USER/.ssh/authorized_keys
@@ -405,14 +412,12 @@ setup_hpc_user()
         chmod 644 $SHARE_HOME/$HPC_USER/.ssh/authorized_keys
         chmod 600 $SHARE_HOME/$HPC_USER/.ssh/id_rsa
         chmod 644 $SHARE_HOME/$HPC_USER/.ssh/id_rsa.pub
-        
-        # Give hpc user access to data share
-        chown $HPC_USER:$HPC_GROUP $SHARE_DATA
+
     else
         useradd -c "HPC User" -g $HPC_GROUP -d $SHARE_HOME/$HPC_USER -s /bin/bash -u $HPC_UID $HPC_USER
     fi
-    
-    chown $HPC_USER:$HPC_GROUP $SHARE_SCRATCH
+
+    chown $HPC_USER:$HPC_GROUP $SHARE_CFS
 }
 
 # Sets all common environment variables and system parameters.
@@ -436,7 +441,7 @@ install_easybuild()
         echo "Skipping EasyBuild install..."
         return 0
     fi
-    
+
     yum -y install Lmod python-devel python-pip gcc gcc-c++ patch unzip tcl tcl-devel libibverbs libibverbs-devel
     pip install vsc-base
 
@@ -465,13 +470,13 @@ install_cfs()
         wget -O beegfs-rhel7.repo http://www.beegfs.com/release/latest-stable/dists/beegfs-rhel7.repo
         mv beegfs-rhel7.repo /etc/yum.repos.d/beegfs.repo
         rpm --import http://www.beegfs.com/release/latest-stable/gpg/RPM-GPG-KEY-beegfs
-        
+
         yum install -y beegfs-client beegfs-helperd beegfs-utils
-        
+
         sed -i 's/^sysMgmtdHost.*/sysMgmtdHost = '$MASTER_HOSTNAME'/g' /etc/beegfs/beegfs-client.conf
         sed -i  's/Type=oneshot.*/Type=oneshot\nRestart=always\nRestartSec=5/g' /etc/systemd/system/multi-user.target.wants/beegfs-client.service
-        echo "$SHARE_SCRATCH /etc/beegfs/beegfs-client.conf" > /etc/beegfs/beegfs-mounts.conf
-        
+        echo "$SHARE_CFS /etc/beegfs/beegfs-client.conf" > /etc/beegfs/beegfs-mounts.conf
+
         if is_master; then
             yum install -y beegfs-mgmtd beegfs-meta
             mkdir -p /data/beegfs/mgmtd
@@ -486,7 +491,7 @@ install_cfs()
             sed -i 's/^sysMgmtdHost.*/sysMgmtdHost = '$MASTER_HOSTNAME'/g' /etc/beegfs/beegfs-storage.conf
             /etc/init.d/beegfs-storage start
         fi
-        
+
         systemctl daemon-reload
     fi
 }

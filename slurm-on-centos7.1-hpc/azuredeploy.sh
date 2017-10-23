@@ -22,7 +22,8 @@ IMAGE_OFFER="$6"
 LAST_WORKER_INDEX=$(($WORKER_COUNT - 1))
 
 # Shares
-SHARE_HOME=/share/home
+SHARE_NFS=/share/nfs
+SHARE_HOME=$SHARE_NFS/home
 SHARE_DATA=/share/data
 
 # Munged
@@ -130,24 +131,21 @@ EOF
 #
 setup_shares()
 {
-    mkdir -p $SHARE_HOME
+    mkdir -p $SHARE_NFS
     mkdir -p $SHARE_DATA
 
     if is_master; then
         setup_data_disks $SHARE_DATA
-        echo "$SHARE_HOME    *(rw,async)" >> /etc/exports
-        echo "$SHARE_DATA    *(rw,async)" >> /etc/exports
+        echo "$SHARE_NFS    *(rw,async)" >> /etc/exports
 
         systemctl enable rpcbind || echo "Already enabled"
         systemctl enable nfs-server || echo "Already enabled"
         systemctl start rpcbind || echo "Already enabled"
         systemctl start nfs-server || echo "Already enabled"
     else
-        echo "master:$SHARE_HOME $SHARE_HOME    nfs4    rw,auto,_netdev 0 0" >> /etc/fstab
-        echo "master:$SHARE_DATA $SHARE_DATA    nfs4    rw,auto,_netdev 0 0" >> /etc/fstab
+        echo "master:$SHARE_NFS $SHARE_NFS    nfs4    rw,auto,_netdev 0 0" >> /etc/fstab
         mount -a
         mount | grep "^master:$SHARE_HOME"
-        mount | grep "^master:$SHARE_DATA"
     fi
 }
 
