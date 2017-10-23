@@ -270,7 +270,7 @@ install_slurm()
 
     cd slurm-slurm-$SLURM_VERSION
 
-    ./configure -libdir=/usr/lib64 --prefix=/usr --sysconfdir=/etc/slurm && make && make install
+    ./configure -libdir=/usr/lib64 --prefix=/usr --sysconfdir=/etc/slurm && make -j 8 && make install
 
     install_slurm_config
 
