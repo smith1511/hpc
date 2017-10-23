@@ -526,6 +526,7 @@
          "name":"[concat(variables('workerVMName'), copyindex(), '/Installation')]",
          "location":"[resourceGroup().location]",
          "dependsOn":[
+            "[concat('Microsoft.Compute/virtualMachines/', variables('masterVMName'), '/extensions/Installation')]",
             "[concat('Microsoft.Compute/virtualMachines/', variables('workerVMName'), copyindex())]"
          ],
          "copy":{
