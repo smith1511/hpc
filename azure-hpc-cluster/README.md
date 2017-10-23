@@ -14,7 +14,7 @@ Deploys a Slurm or PBS OSS cluster with a head node and one or more worker nodes
 
 4. Accept the terms and agreements.
 
-5. Click Create.
+5. Click Purchase.
 
 ## Accessing the cluster
 
