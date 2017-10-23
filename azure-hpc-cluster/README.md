@@ -18,10 +18,10 @@ Deploys a Slurm or PBS OSS cluster with a head node and one or more worker nodes
 
 ## Accessing the cluster
 
-Simply SSH to the master node using the DNS name _**dnsName**_._**location**_.cloudapp.azure.com, for example, centos71-hpc.westus.cloudapp.azure.com.
+Simply SSH to the master node using the public IP address (PIP).
 
 ```
-# ssh azureuser@<IP>
+# ssh azureuser@10.0.0.1
 ```
 
 You can log into the head node using the admin user and password specified.  Once on the head node you can switch to the HPC user.  For security reasons the HPC user cannot login to the head node directly.

@@ -362,7 +362,7 @@ install_scheduler()
     if [ "$SCHEDULER" == "Slurm" ]; then
         install_munge
         install_slurm
-    elif [ "$SCHEDULER" == "PBSPro-OpenSource" ]; then
+    elif [ "$SCHEDULER" == "PBSPro-OS" ]; then
         install_pbsoss
     else
         echo "Invalid scheduler specified: $SCHEDULER"
@@ -429,11 +429,14 @@ setup_env()
     echo "$HPC_USER hard memlock unlimited" >> /etc/security/limits.conf
     echo "$HPC_USER soft memlock unlimited" >> /etc/security/limits.conf
 
-    # Intel MPI config for IB
-    echo "# IB Config for MPI" > /etc/profile.d/mpi.sh
-    echo "export I_MPI_FABRICS=shm:dapl" >> /etc/profile.d/mpi.sh
-    echo "export I_MPI_DAPL_PROVIDER=ofa-v2-ib0" >> /etc/profile.d/mpi.sh
-    echo "export I_MPI_DYNAMIC_CONNECTION=0" >> /etc/profile.d/mpi.sh
+    echo "$IMAGE_OFFER" | grep -q 'HPC$'
+    if [ $? -eq 0 ]; then
+        # Intel MPI config for IB
+        echo "# IB Config for MPI" > /etc/profile.d/mpi.sh
+        echo "export I_MPI_FABRICS=shm:dapl" >> /etc/profile.d/mpi.sh
+        echo "export I_MPI_DAPL_PROVIDER=ofa-v2-ib0" >> /etc/profile.d/mpi.sh
+        echo "export I_MPI_DYNAMIC_CONNECTION=0" >> /etc/profile.d/mpi.sh
+    fi
 }
 
 install_easybuild()

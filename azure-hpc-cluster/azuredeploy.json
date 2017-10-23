@@ -7,7 +7,7 @@
          "defaultValue":"Slurm",
          "allowedValues":[
             "Slurm",
-            "PBSPro-OpenSource"
+            "PBSPro-OS"
          ],
          "metadata":{
             "description":"HPC scheduler to install."
