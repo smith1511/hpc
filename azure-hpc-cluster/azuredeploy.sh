@@ -23,7 +23,7 @@ CFS_STORAGE="$7" # None,Storage,SSD
 CFS_STORAGE_LOCATION="/data/beegfs/storage"
 IMAGE_OFFER="$8"
 SCHEDULER="$9"
-INSTALL_EASYBUILD="$10"
+INSTALL_EASYBUILD="${10}"
 LAST_WORKER_INDEX=$(($WORKER_COUNT - 1))
 
 if [ "$CFS_STORAGE" == "Storage" ]; then
@@ -280,12 +280,14 @@ install_slurm()
         systemctl daemon-reload
         systemctl enable slurmctld
         systemctl start slurmctld
+        systemctl status slurmctld
     else
         wget $TEMPLATE_BASE_URL/slurmd.service
         mv slurmd.service /usr/lib/systemd/system
         systemctl daemon-reload
         systemctl enable slurmd
         systemctl start slurmd
+        systemctl status slurmd
     fi
 
     cd ..
