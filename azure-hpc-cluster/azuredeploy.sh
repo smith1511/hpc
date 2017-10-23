@@ -151,7 +151,6 @@ EOF
 setup_shares()
 {
     mkdir -p $SHARE_NFS
-    mkdir -p $SHARE_DATA
     mkdir -p $SHARE_CFS
 
     if is_master; then
@@ -168,6 +167,9 @@ setup_shares()
         systemctl enable nfs-server || echo "Already enabled"
         systemctl start rpcbind || echo "Already enabled"
         systemctl start nfs-server || echo "Already enabled"
+
+        mount -a
+        mount
     else
         if [ "$CFS_STORAGE" == "Storage" ]; then
             # Format CFS mount point
