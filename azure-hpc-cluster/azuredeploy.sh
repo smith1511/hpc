@@ -8,6 +8,8 @@ if [[ $(id -u) -ne 0 ]] ; then
     exit 1
 fi
 
+echo "Script arguments: $@"
+
 if [ $# != 10 ]; then
     echo "Usage: $0 <MasterHostname> <WorkerHostnamePrefix> <WorkerNodeCount> <HPCUserName> <TemplateBaseUrl> <ClusterFilesystem> <ClusterFilesystemStorage> <ImageOffer> <Scheduler> <InstallEasybuild>"
     exit 1
