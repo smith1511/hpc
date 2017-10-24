@@ -510,27 +510,6 @@ install_cfs()
     fi
 }
 
-install_xor()
-{
-    if is_master; then
-        cd $SHARE_HOME/$HPC_USER
-        mkdir IOR-2.10.3
-	    cd IOR-2.10.3
-	    wget http://www.nersc.gov/assets/Trinity--NERSC-8-RFP/Benchmarks/July12/IOR-July12.tar
-	    tar xvf IOR-July12.tar
-	    cd src/C
-    	make mpiio
-    	cd $SHARE_HOME/$HPC_USER
-	    chown -R $HPC_USER:$HPC_GROUP IOR-2.10.3
-	fi
-}
-
-setup_swap()
-{
-    echo "Ignore for now..."
-}
-
-setup_swap
 install_pkgs
 setup_shares
 setup_hpc_user
@@ -538,6 +517,5 @@ install_cfs
 install_scheduler
 setup_env
 install_easybuild
-install_xor
 shutdown -r +1 &
 exit 0
