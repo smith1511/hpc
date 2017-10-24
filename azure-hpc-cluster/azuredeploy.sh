@@ -127,6 +127,8 @@ w
 EOF
         createdPartitions="$createdPartitions /dev/${disk}1"
     done
+    
+    sleep 30
 
     # Create RAID-0 volume
     if [ -n "$createdPartitions" ]; then
@@ -140,7 +142,7 @@ EOF
             echo "/dev/md10 $mountPoint $filesystem defaults,nofail 0 2" >> /etc/fstab
         fi
         
-        sleep 30
+        sleep 15
         
         mount /dev/md10
     fi
